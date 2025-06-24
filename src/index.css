@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.bg-animated-gradient {
+  bbackground: linear-gradient(270deg, #4b5563, #6b7280, #9ca3af);  
+  /* Replace these hex colors with your preferred ones */
+  background-size: 600% 600%;
+  animation: gradientShift 15s ease infinite;
+}
+@keyframes floatUpDown {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.floating-circle {
+  position: absolute;
+  border-radius: 9999px; /* fully rounded */
+  background-color: #3b82f6; /* Tailwind blue-500 */
+  opacity: 0.3;
+  animation: floatUpDown 6s ease-in-out infinite;
+}
