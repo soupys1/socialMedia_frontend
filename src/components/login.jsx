@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase client
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL || "https://your-supabase-url.supabase.co",
+  import.meta.env.VITE_SUPABASE_KEY || "your-supabase-anon-key"
+);
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -18,41 +25,58 @@ export default function Login() {
     setLoading(true);
 
     try {
-      console.log("🔄 Starting login process via backend...", formData);
-      const response = await fetch("https://socialmedia-backend-klnf.onrender.com/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      console.log("🔄 Starting login process...");
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
       });
 
-      const data = await response.json();
-      console.log("📡 Backend response:", { status: response.status, data });
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+      if (error) {
+        console.error("❌ Login error:", { message: error.message, details: error });
+        if (error.message === "Email not confirmed") {
+          setError("Please confirm your email. Check your inbox or resend the confirmation.");
+        } else {
+          setError(error.message || "Login failed");
+        }
+      } else {
+        console.log("✅ Login success:", { user: data.user, session: data.session });
+        
+        // Additional session verification
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("📋 Current session after login:", session);
+        
+        // Add a small delay to ensure auth state is updated
+        setTimeout(() => {
+          console.log("🔄 Attempting navigation to /profile...");
+          try {
+            navigate("/profile");
+            console.log("✅ Navigation called successfully");
+          } catch (navError) {
+            console.error("❌ Navigation error:", navError);
+            setError("Navigation failed. Please refresh and try again.");
+          }
+        }, 100);
       }
-
-      console.log("✅ Login success:", data);
-      setTimeout(() => {
-        console.log("🔄 Attempting navigation to /profile...");
-        navigate("/profile");
-        console.log("✅ Navigation called successfully");
-      }, 100);
     } catch (err) {
-      console.error("💥 Login error:", err.message);
-      setError(err.message || "An unexpected error occurred. Please try again.");
+      console.error("💥 Unexpected login error:", err);
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Debug function to test navigation manually
+  const testNavigation = () => {
+    console.log("🧪 Testing manual navigation to /profile...");
+    navigate("/profile");
   };
 
   const resendConfirmation = async () => {
     setError("");
     setLoading(true);
     try {
-      // Note: This requires VITE_SUPABASE_URL and VITE_SUPABASE_KEY to be set
-      const { error } = await (window.supabase?.auth.resend || { resend: () => ({ error: new Error("Supabase not initialized") })}) ({
+      const { error } = await supabase.auth.resend({
         type: "signup",
         email: formData.email,
       });
@@ -70,7 +94,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const { error } = await (window.supabase?.auth.resetPasswordForEmail || { resetPasswordForEmail: () => ({ error: new Error("Supabase not initialized") })}) (formData.email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
         redirectTo: "https://social-media-frontend-c79j.vercel.app/reset-password",
       });
       if (error) throw error;
@@ -83,13 +107,9 @@ export default function Login() {
     }
   };
 
-  const testNavigation = () => {
-    console.log("🧪 Testing manual navigation to /profile...");
-    navigate("/profile");
-  };
-
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-animated-gradient overflow-hidden">
+      {/* Floating Background Circles */}
       <div className="floating-circle" style={{ width: 80, height: 80, top: "10%", left: "15%", animationDelay: "0s" }} />
       <div className="floating-circle" style={{ width: 50, height: 50, top: "60%", left: "25%", animationDelay: "2s" }} />
       <div className="floating-circle" style={{ width: 120, height: 120, top: "70%", left: "75%", animationDelay: "4s" }} />
@@ -107,6 +127,7 @@ export default function Login() {
           Login
         </h2>
 
+        {/* Debug button - remove this in production */}
         <button
           type="button"
           onClick={testNavigation}
