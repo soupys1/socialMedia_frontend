@@ -2,12 +2,6 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Initialize Supabase client (optional, for resend/reset functionality)
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || "https://your-supabase-url.supabase.co",
-  import.meta.env.VITE_SUPABASE_KEY || "your-supabase-anon-key"
-);
-
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -24,32 +18,30 @@ export default function Login() {
     setLoading(true);
 
     try {
-      console.log("🔄 Starting login process via backend...");
-
+      console.log("🔄 Starting login process via backend...", formData);
       const response = await fetch("https://socialmedia-backend-klnf.onrender.com/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // Required for cookies
+        credentials: "include",
         body: JSON.stringify({ email: formData.email, password: formData.password }),
       });
 
       const data = await response.json();
+      console.log("📡 Backend response:", { status: response.status, data });
 
       if (!response.ok) {
-        console.error("❌ Login error:", { message: data.error, status: response.status });
-        setError(data.error || "Login failed");
-      } else {
-        console.log("✅ Login success:", data);
-        // No need for supabase.auth.getSession() here; rely on the backend token
-        setTimeout(() => {
-          console.log("🔄 Attempting navigation to /profile...");
-          navigate("/profile");
-          console.log("✅ Navigation called successfully");
-        }, 100);
+        throw new Error(data.error || "Login failed");
       }
+
+      console.log("✅ Login success:", data);
+      setTimeout(() => {
+        console.log("🔄 Attempting navigation to /profile...");
+        navigate("/profile");
+        console.log("✅ Navigation called successfully");
+      }, 100);
     } catch (err) {
-      console.error("💥 Unexpected login error:", err.message);
-      setError("An unexpected error occurred. Please try again.");
+      console.error("💥 Login error:", err.message);
+      setError(err.message || "An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +51,8 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resend({
+      // Note: This requires VITE_SUPABASE_URL and VITE_SUPABASE_KEY to be set
+      const { error } = await (window.supabase?.auth.resend || { resend: () => ({ error: new Error("Supabase not initialized") })}) ({
         type: "signup",
         email: formData.email,
       });
@@ -77,7 +70,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+      const { error } = await (window.supabase?.auth.resetPasswordForEmail || { resetPasswordForEmail: () => ({ error: new Error("Supabase not initialized") })}) (formData.email, {
         redirectTo: "https://social-media-frontend-c79j.vercel.app/reset-password",
       });
       if (error) throw error;
