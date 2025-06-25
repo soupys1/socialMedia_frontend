@@ -5,13 +5,14 @@ import { createClient } from "@supabase/supabase-js";
 
 // Initialize Supabase client
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_KEY
+  import.meta.env.VITE_SUPABASE_URL || "https://your-supabase-url.supabase.co",
+  import.meta.env.VITE_SUPABASE_KEY || "your-supabase-anon-key"
 );
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -21,18 +22,67 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
 
-    if (error) {
-      console.error("Login error:", error.message);
-      setError(error.message || "Login failed");
-    } else {
-      console.log("Login success:", data);
-      navigate("/");
+      if (error) {
+        console.error("Login error:", { message: error.message, details: error });
+        if (error.message === "Email not confirmed") {
+          setError("Please confirm your email. Check your inbox or resend the confirmation.");
+        } else {
+          setError(error.message || "Login failed");
+        }
+      } else {
+        console.log("Login success:", { user: data.user, session: data.session });
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Current session:", session);
+        navigate("/profile");
+      }
+    } catch (err) {
+      console.error("Unexpected login error:", err);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendConfirmation = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: formData.email,
+      });
+      if (error) throw error;
+      setError("Confirmation email resent. Please check your inbox.");
+    } catch (err) {
+      console.error("Resend error:", err.message);
+      setError("Failed to resend confirmation. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: "https://social-media-frontend-c79j.vercel.app/reset-password",
+      });
+      if (error) throw error;
+      setError("Password reset email sent. Please check your inbox.");
+    } catch (err) {
+      console.error("Reset error:", err.message);
+      setError("Failed to send reset email. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,17 +108,42 @@ export default function Login() {
 
         <AnimatePresence>
           {error && (
-            <motion.p
+            <motion.div
               key="error-msg"
-              className="text-red-500 text-sm mb-4 text-center"
+              className="text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              role="alert"
             >
-              {error}
-            </motion.p>
+              <p className="text-red-500 text-sm mb-2" role="alert">
+                {error}
+              </p>
+              {error.includes("confirm") && (
+                <motion.button
+                  onClick={resendConfirmation}
+                  className="text-blue-500 text-sm hover:underline mt-1"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={loading}
+                  aria-label="Resend confirmation email"
+                >
+                  {loading ? "Sending..." : "Resend Confirmation"}
+                </motion.button>
+              )}
+              {error.includes("Login failed") && (
+                <motion.button
+                  onClick={resetPassword}
+                  className="text-blue-500 text-sm hover:underline mt-1"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={loading}
+                  aria-label="Reset password"
+                >
+                  {loading ? "Sending..." : "Forgot Password?"}
+                </motion.button>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
 
@@ -85,6 +160,7 @@ export default function Login() {
               onChange={handleChange}
               className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:ring-2 focus:ring-blue-500"
               required
+              autoComplete={field === "email" ? "username" : "current-password"}
               aria-required="true"
             />
           </div>
@@ -96,10 +172,10 @@ export default function Login() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           transition={{ type: "spring", stiffness: 300 }}
-          disabled={Object.values(formData).some((v) => !v)}
+          disabled={loading || Object.values(formData).some((v) => !v)}
           aria-label="Login"
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </motion.button>
 
         <p className="text-center text-sm mt-4">
