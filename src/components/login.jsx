@@ -25,30 +25,51 @@ export default function Login() {
     setLoading(true);
 
     try {
+      console.log("🔄 Starting login process...");
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
 
       if (error) {
-        console.error("Login error:", { message: error.message, details: error });
+        console.error("❌ Login error:", { message: error.message, details: error });
         if (error.message === "Email not confirmed") {
           setError("Please confirm your email. Check your inbox or resend the confirmation.");
         } else {
           setError(error.message || "Login failed");
         }
       } else {
-        console.log("Login success:", { user: data.user, session: data.session });
+        console.log("✅ Login success:", { user: data.user, session: data.session });
+        
+        // Additional session verification
         const { data: { session } } = await supabase.auth.getSession();
-        console.log("Current session:", session);
-        navigate("/profile");
+        console.log("📋 Current session after login:", session);
+        
+        // Add a small delay to ensure auth state is updated
+        setTimeout(() => {
+          console.log("🔄 Attempting navigation to /profile...");
+          try {
+            navigate("/profile");
+            console.log("✅ Navigation called successfully");
+          } catch (navError) {
+            console.error("❌ Navigation error:", navError);
+            setError("Navigation failed. Please refresh and try again.");
+          }
+        }, 100);
       }
     } catch (err) {
-      console.error("Unexpected login error:", err);
+      console.error("💥 Unexpected login error:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Debug function to test navigation manually
+  const testNavigation = () => {
+    console.log("🧪 Testing manual navigation to /profile...");
+    navigate("/profile");
   };
 
   const resendConfirmation = async () => {
@@ -105,6 +126,15 @@ export default function Login() {
         <h2 id="login-title" className="text-2xl font-bold mb-6 text-center">
           Login
         </h2>
+
+        {/* Debug button - remove this in production */}
+        <button
+          type="button"
+          onClick={testNavigation}
+          className="mb-4 bg-gray-500 text-white font-bold py-1 px-2 rounded text-xs w-full"
+        >
+          🧪 Test Navigation to Profile
+        </button>
 
         <AnimatePresence>
           {error && (
