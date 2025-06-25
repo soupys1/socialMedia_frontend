@@ -3,19 +3,14 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@supabase/supabase-js";
 
-// Supabase initialization (keep for future use)
+// Initialize Supabase client
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_KEY
 );
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-
 export default function Login() {
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -27,23 +22,17 @@ export default function Login() {
     e.preventDefault();
     setError("");
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Login failed");
-      }
-
+    if (error) {
+      console.error("Login error:", error.message);
+      setError(error.message || "Login failed");
+    } else {
+      console.log("Login success:", data);
       navigate("/");
-    } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "Login failed");
     }
   };
 
@@ -83,7 +72,7 @@ export default function Login() {
           )}
         </AnimatePresence>
 
-        {["username", "password"].map((field) => (
+        {["email", "password"].map((field) => (
           <div className="mb-4" key={field}>
             <label htmlFor={field} className="block text-gray-700 text-sm font-bold mb-2">
               {field.charAt(0).toUpperCase() + field.slice(1)}
@@ -91,7 +80,7 @@ export default function Login() {
             <input
               id={field}
               name={field}
-              type={field === "password" ? "password" : "text"}
+              type={field === "password" ? "password" : "email"}
               value={formData[field]}
               onChange={handleChange}
               className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:ring-2 focus:ring-blue-500"

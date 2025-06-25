@@ -1,16 +1,15 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import Nav from "./Nav.jsx";
 import { createClient } from "@supabase/supabase-js";
+import Nav from "./Nav.jsx";
 
-// Initialize Supabase client (optional)
+// Initialize Supabase client
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_KEY
+  import.meta.env.VITE_SUPABASE_URL || "https://your-supabase-url.supabase.co",
+  import.meta.env.VITE_SUPABASE_KEY || "your-supabase-anon-key"
 );
 
-
-// Base URL for backend
+// Base URL for backend with fallback
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function Profile() {
@@ -64,7 +63,9 @@ export default function Profile() {
 
   const fetchComments = async (postId) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/comments/${postId}`, { credentials: "include" });
+      const res = await fetch(`${API_BASE_URL}/api/comments/${postId}`, {
+        credentials: "include",
+      });
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || "Failed to fetch comments");
@@ -73,6 +74,7 @@ export default function Profile() {
       setComments((prev) => ({ ...prev, [postId]: data }));
     } catch (err) {
       console.error(`Failed to load comments for post ${postId}:`, err);
+      setError(err.message || `Failed to load comments for post ${postId}`);
     }
   };
 
@@ -101,7 +103,7 @@ export default function Profile() {
       await fetchProfile();
     } catch (err) {
       console.error("Upload error:", err);
-      setError(err.message || "Failed to upload profile picture. Please try again.");
+      setError(err.message || "Failed to upload profile picture.");
     }
   };
 
@@ -121,7 +123,7 @@ export default function Profile() {
       await fetchProfile();
     } catch (err) {
       console.error("Delete profile picture error:", err);
-      setError(err.message || "Failed to delete profile picture. Please try again.");
+      setError(err.message || "Failed to delete profile picture.");
     }
   };
 
@@ -137,6 +139,7 @@ export default function Profile() {
       }
       navigate("/login");
     } catch (err) {
+      console.error("Logout error:", err);
       setError(err.message || "Logout failed");
     }
   };
@@ -154,7 +157,7 @@ export default function Profile() {
       }
       navigate("/login");
     } catch (err) {
-      console.error(err);
+      console.error("Delete profile error:", err);
       setError(err.message || "Failed to delete profile");
     }
   };
@@ -169,10 +172,10 @@ export default function Profile() {
       });
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to send request");
+        throw new Error(errData.error || "Failed to send friend request");
       }
-      await fetchProfile();
       setRequestSent(true);
+      await fetchProfile();
     } catch (err) {
       console.error("Error sending friend request:", err);
       setError(err.message || "Failed to send friend request");
@@ -189,12 +192,12 @@ export default function Profile() {
       });
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to accept request");
+        throw new Error(errData.error || "Failed to accept friend request");
       }
       await fetchProfile();
     } catch (err) {
       console.error("Error accepting friend request:", err);
-      setError(err.message || "Failed to accept request");
+      setError(err.message || "Failed to accept friend request");
     }
   };
 
@@ -212,7 +215,7 @@ export default function Profile() {
       }
       await fetchProfile();
     } catch (err) {
-      console.error("Error unfriending:", err);
+      console.error("Unfriend error:", err);
       setError(err.message || "Failed to unfriend");
     } finally {
       setUnfriending(false);
@@ -221,8 +224,11 @@ export default function Profile() {
 
   const handleCommentSubmit = async (e, postId) => {
     e.preventDefault();
-    const commentContent = e.target.elements.comment.value;
-    if (!commentContent.trim()) return;
+    const commentContent = e.target.elements.comment.value.trim();
+    if (!commentContent) {
+      setError("Comment cannot be empty.");
+      return;
+    }
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/comments`, {
@@ -236,49 +242,63 @@ export default function Profile() {
         throw new Error(errData.error || "Failed to post comment");
       }
       e.target.reset();
-      fetchComments(postId);
+      await fetchComments(postId);
     } catch (err) {
-      console.error(err);
+      console.error("Comment error:", err);
       setError(err.message || "Failed to post comment");
     }
   };
 
   useEffect(() => {
     fetchProfile();
-    const subscription = supabase
-      .channel(`friend_requests:${id || viewer?.id}`)
+    const userId = id || viewer?.id;
+    if (!userId) return;
+
+    const friendRequestChannel = supabase
+      .channel(`friend_requests:${userId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "friend_requests",
-          filter: `receiverId=eq.${id || viewer?.id}`,
+          filter: `receiverId=eq.${userId}`,
         },
         () => fetchProfile()
       )
       .subscribe();
-    return () => supabase.removeChannel(subscription);
-  }, [id, viewer]);
+
+    return () => {
+      supabase.removeChannel(friendRequestChannel);
+    };
+  }, [id, viewer?.id]);
 
   useEffect(() => {
+    if (posts.length === 0) return;
+
     posts.forEach((post) => {
       if (!comments[post.id]) {
         fetchComments(post.id);
       }
     });
-    const subscription = supabase
+
+    const commentChannel = supabase
       .channel("comments")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "comments" },
         (payload) => {
           const postId = payload.new.postId;
-          fetchComments(postId);
+          if (posts.some((post) => post.id === postId)) {
+            fetchComments(postId);
+          }
         }
       )
       .subscribe();
-    return () => supabase.removeChannel(subscription);
+
+    return () => {
+      supabase.removeChannel(commentChannel);
+    };
   }, [posts]);
 
   const isSelf = viewer && user && viewer.id === user.id;
@@ -315,7 +335,6 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Nav handleLogout={handleLogout} handleDeleteProfile={handleDeleteProfile} />
-
       <div className="py-6 px-4 sm:px-6 lg:px-8">
         <div className="bg-white shadow-lg p-6 rounded-lg max-w-3xl mx-auto">
           <div className="flex items-center space-x-4 mb-6">
@@ -324,10 +343,11 @@ export default function Profile() {
                 src={user.profilePicture}
                 alt={`${user.username}'s profile picture`}
                 className="w-20 h-20 rounded-full object-cover"
+                onError={(e) => (e.target.src = "/fallback-profile.png")} // Fallback image
               />
             ) : (
               <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center text-2xl text-gray-600">
-                {user.username[0]}
+                {user.username[0].toUpperCase()}
               </div>
             )}
             <div>
@@ -340,10 +360,7 @@ export default function Profile() {
 
           {isSelf && (
             <div className="mb-6">
-              <form
-                onSubmit={handleUploadProfilePicture}
-                encType="multipart/form-data"
-              >
+              <form onSubmit={handleUploadProfilePicture}>
                 <input
                   type="file"
                   accept="image/*"
@@ -445,10 +462,11 @@ export default function Profile() {
                         src={req.user.profilePicture}
                         alt={`${req.user.username}'s profile picture`}
                         className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => (e.target.src = "/fallback-profile.png")} // Fallback image
                       />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">
-                        {req.user.username[0]}
+                        {req.user.username[0].toUpperCase()}
                       </div>
                     )}
                     <Link
@@ -477,7 +495,7 @@ export default function Profile() {
               className={`px-4 py-2 rounded-md text-sm ${
                 activeTab === "posts"
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
               role="tab"
               aria-selected={activeTab === "posts"}
@@ -489,8 +507,8 @@ export default function Profile() {
               onClick={() => setActiveTab("friends")}
               className={`px-4 py-2 rounded-md text-sm ${
                 activeTab === "friends"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
               role="tab"
               aria-selected={activeTab === "friends"}
@@ -508,18 +526,19 @@ export default function Profile() {
                   posts.map((post) => (
                     <div
                       key={post.id}
-                      className="bg-gray-50 rounded-lg p-4 mb-2 shadow-sm border"
+                      className="bg-gray-50 rounded-lg p-4 mb-4 shadow-sm border"
                     >
                       <h3 className="text-lg font-bold text-blue-600 mb-2">{post.title}</h3>
                       <p className="text-gray-600 mb-2">{post.content}</p>
                       {post.images?.length > 0 && (
-                        <div className="mt-2">
+                        <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {post.images.map((img) => (
                             <img
                               key={img.id}
                               src={img.url}
                               alt="Post image"
-                              className="w-full h-auto rounded-md mb-2"
+                              className="w-full h-auto rounded-md"
+                              onError={(e) => (e.target.src = "/fallback-image.png")} // Fallback image
                             />
                           ))}
                         </div>
@@ -527,7 +546,7 @@ export default function Profile() {
                       <p className="text-gray-500 text-sm">
                         Posted on {new Date(post.createdAt).toLocaleDateString()}
                       </p>
-                      <div className="mt-2 border-t pt-2">
+                      <div className="mt-4 border-t pt-2">
                         <h4 className="text-sm font-semibold mb-2">Comments</h4>
                         {comments[post.id]?.length === 0 && (
                           <p className="text-gray-500 text-sm">No comments yet.</p>
@@ -539,10 +558,11 @@ export default function Profile() {
                                 src={comment.author.profilePicture}
                                 alt={`${comment.author.username}'s profile picture`}
                                 className="w-8 h-8 rounded-full object-cover"
+                                onError={(e) => (e.target.src = "/fallback-profile.png")} // Fallback image
                               />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">
-                                {comment.author.username[0]}
+                                {comment.author.username[0].toUpperCase()}
                               </div>
                             )}
                             <div>
@@ -596,7 +616,7 @@ export default function Profile() {
                   friends.map((friendship) => (
                     <div
                       key={friendship.id}
-                      className="flex items-center justify-between bg-gray-50 rounded-lg p-4 mb-2 shadow-sm border"
+                      className="flex items-center justify-between bg-gray-50 rounded-lg p-4 mb-4 shadow-sm border"
                     >
                       <div className="flex items-center space-x-2">
                         {friendship.friend.profilePicture ? (
@@ -604,10 +624,11 @@ export default function Profile() {
                             src={friendship.friend.profilePicture}
                             alt={`${friendship.friend.username}'s profile picture`}
                             className="w-8 h-8 rounded-full object-cover"
+                            onError={(e) => (e.target.src = "/fallback-profile.png")} // Fallback image
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">
-                            {friendship.friend.username[0]}
+                            {friendship.friend.username[0].toUpperCase()}
                           </div>
                         )}
                         <Link
@@ -621,7 +642,7 @@ export default function Profile() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => navigate(`/message/${friendship.friend.id}`)}
-                          className="text-sm bg-purple-500 text-white px-3 py-1 rounded-md hover:bg-purple-600"
+                          className="text-sm bg-purple-500 text-white px-3 py-1 rounded-md hover:bg-purple-600 transition"
                           aria-label={`Message ${friendship.friend.username}`}
                         >
                           Message
@@ -630,7 +651,7 @@ export default function Profile() {
                           <button
                             onClick={() => handleUnfriend(friendship.friend.id)}
                             disabled={unfriending}
-                            className="text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 disabled:opacity-50"
+                            className="text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 disabled:opacity-50 transition"
                             aria-label={`Unfriend ${friendship.friend.username}`}
                           >
                             Unfriend
