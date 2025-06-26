@@ -1,17 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import Nav from "./Nav";
-import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase client (optional, for direct queries)
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_KEY
-);
-
-
-// Base URL for backend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = "https://socialmedia-backend-k1nf.onrender.com";
 
 export default function Message() {
   const { id: friendIdParam } = useParams();
@@ -42,7 +33,6 @@ export default function Message() {
       setFriends(data.friends || []);
       setViewer(data.viewer);
     } catch (err) {
-      console.error(err);
       setError(err.message || "Failed to load friends");
     } finally {
       setLoadingFriends(false);
@@ -70,20 +60,7 @@ export default function Message() {
       }
       const data = await res.json();
       setMessages(data.messages || []);
-
-      // Optional: Direct Supabase query
-      /*
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*, sender:senderId(id, username, firstName, lastName, profilePicture)")
-        .or(`senderId.eq.${viewer?.id},receiverId.eq.${viewer?.id}`)
-        .or(`senderId.eq.${friendId},receiverId.eq.${friendId}`)
-        .order("createdAt", { ascending: true });
-      if (error) throw error;
-      setMessages(data);
-      */
     } catch (err) {
-      console.error(err);
       setError(err.message || "Failed to load messages");
     } finally {
       setLoadingMessages(false);
@@ -109,100 +86,26 @@ export default function Message() {
       setMessageText("");
       fetchMessages(friendIdParam);
     } catch (err) {
-      console.error(err);
       setError(err.message || "Failed to send message");
     }
   };
 
-  const handleUnfriend = async (friendId) => {
-    if (!window.confirm("Are you sure you want to unfriend this user?")) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/profile/unfriend/${friendId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to unfriend");
-      }
-      await fetchProfile();
-      if (Number(friendIdParam) === friendId) {
-        navigate("/message");
-      }
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Failed to unfriend");
-    }
-  };
-
-  const handleDeleteProfile = async () => {
-    if (!window.confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/profile`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to delete profile");
-      }
-      navigate("/login");
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Failed to delete profile");
-    }
-  };
-
   const handleLogout = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Logout failed");
-      }
-      navigate("/login");
-    } catch (err) {
-      setError(err.message || "Logout failed");
-    }
+    await fetch(`${API_BASE_URL}/api/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    navigate("/login");
   };
 
-  // Real-time message subscription (optional)
   useEffect(() => {
     fetchProfile();
-    let subscription;
-
-    // Optional: Supabase real-time subscription
-    /*
-    if (friendIdParam && viewer) {
-      subscription = supabase
-        .channel(`messages:${viewer.id}:${friendIdParam}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "messages",
-            filter: `senderId=in.(${viewer.id},${friendIdParam}),receiverId=in.(${viewer.id},${friendIdParam})`,
-          },
-          (payload) => {
-            setMessages((prev) => [...prev, payload.new]);
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-          }
-        )
-        .subscribe();
-    }
-    */
-
-    return () => {
-      if (subscription) supabase.removeChannel(subscription);
-    };
-  }, [friendIdParam]);
+    // eslint-disable-next-line
+  }, []);
 
   useEffect(() => {
     fetchMessages(friendIdParam);
+    // eslint-disable-next-line
   }, [friendIdParam]);
 
   useEffect(() => {
@@ -212,7 +115,7 @@ export default function Message() {
   if (loadingFriends) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Nav handleLogout={handleLogout} handleDeleteProfile={handleDeleteProfile} />
+        <Nav handleLogout={handleLogout} />
         <p className="text-gray-500">Loading friends...</p>
       </div>
     );
@@ -221,7 +124,7 @@ export default function Message() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Nav handleLogout={handleLogout} handleDeleteProfile={handleDeleteProfile} />
+        <Nav handleLogout={handleLogout} />
         <div className="text-center mt-10 text-red-500" role="alert">{error}</div>
       </div>
     );
@@ -231,8 +134,7 @@ export default function Message() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Nav handleLogout={handleLogout} handleDeleteProfile={handleDeleteProfile} />
-
+      <Nav handleLogout={handleLogout} />
       <div className="flex-grow flex justify-center items-start py-4 px-2">
         <div className="w-full max-w-6xl h-[80vh] bg-white rounded-lg shadow flex overflow-hidden">
           {/* Friends List */}
@@ -251,52 +153,19 @@ export default function Message() {
                     }`}
                     aria-current={friend.id === Number(friendIdParam) ? "true" : "false"}
                   >
-                    {friend.profilePicture ? (
-                      <img
-                        src={friend.profilePicture}
-                        alt={`${friend.username}'s profile picture`}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
-                        {friend.firstName[0]}
-                      </div>
-                    )}
-                    <span>{friend.firstName} {friend.lastName} (@{friend.username})</span>
+                    <span>{friend.first_name} {friend.last_name} (@{friend.username})</span>
                   </Link>
-                  <button
-                    onClick={() => handleUnfriend(friend.id)}
-                    className="text-red-500 hover:text-red-600 text-sm"
-                    title={`Unfriend ${friend.username}`}
-                    aria-label={`Unfriend ${friend.username}`}
-                  >
-                    Unfriend
-                  </button>
                 </li>
               ))}
             </ul>
           </div>
-
           {/* Chat Area */}
           <div className="w-2/3 flex flex-col justify-between" aria-label="Chat area">
             <div className="p-4 border-b flex items-center space-x-2">
               {friendIdParam && friend && (
-                <>
-                  {friend.friend.profilePicture ? (
-                    <img
-                      src={friend.friend.profilePicture}
-                      alt={`${friend.friend.username}'s profile picture`}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
-                      {friend.friend.firstName[0]}
-                    </div>
-                  )}
-                  <h3 className="text-lg font-semibold">
-                    {friend.friend.firstName} {friend.friend.lastName} (@{friend.friend.username})
-                  </h3>
-                </>
+                <h3 className="text-lg font-semibold">
+                  {friend.friend.first_name} {friend.friend.last_name} (@{friend.friend.username})
+                </h3>
               )}
             </div>
             <div className="p-4 overflow-y-auto flex-grow space-y-4" aria-live="polite">
@@ -308,13 +177,9 @@ export default function Message() {
                 <p className="text-center text-gray-500">No messages yet.</p>
               )}
               {messages.map((msg) => {
-                const isSender = msg.senderId === viewer?.id;
+                const isSender = msg.sender_id === viewer?.id;
                 const senderName = isSender ? viewer.username : friend?.friend.username || "Unknown";
-                const profilePicture = isSender
-                  ? viewer.profilePicture
-                  : friend?.friend.profilePicture;
-
-                const createdAt = new Date(msg.createdAt);
+                const createdAt = new Date(msg.created_at);
                 const date = createdAt.toLocaleDateString();
                 const time = createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -323,17 +188,6 @@ export default function Message() {
                     key={msg.id}
                     className={`flex ${isSender ? "justify-end" : "justify-start"} items-start space-x-2 w-full`}
                   >
-                    {!isSender && profilePicture ? (
-                      <img
-                        src={profilePicture}
-                        alt={`${senderName}'s profile picture`}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : !isSender && !profilePicture ? (
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
-                        {senderName[0]}
-                      </div>
-                    ) : null}
                     <div
                       className={`flex flex-col ${isSender ? "items-end" : "items-start"} max-w-[70%]`}
                     >
@@ -353,23 +207,11 @@ export default function Message() {
                         {senderName} • {date} • {time}
                       </div>
                     </div>
-                    {isSender && profilePicture ? (
-                      <img
-                        src={profilePicture}
-                        alt={`${viewer.username}'s profile picture`}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : isSender && !profilePicture ? (
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
-                        {viewer.username[0]}
-                      </div>
-                    ) : null}
                   </div>
                 );
               })}
               <div ref={messagesEndRef} />
             </div>
-
             {/* Message Input */}
             {friendIdParam && (
               <form onSubmit={handleSendMessage} className="p-4 border-t flex items-center gap-2 bg-white">

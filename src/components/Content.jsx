@@ -1,13 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Nav from "./Nav";
-import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase client
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_KEY
-);
+const API_BASE_URL = "https://socialmedia-backend-k1nf.onrender.com";
 
 export default function Content() {
   const [posts, setPosts] = useState([]);
@@ -24,19 +19,22 @@ export default function Content() {
   const fetchContent = async () => {
     setLoading(true);
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
+      const res = await fetch(`${API_BASE_URL}/api/content`, {
+        credentials: "include",
+      });
+      if (res.status === 401) {
         navigate("/login");
         return;
       }
-      setUser(user);
-
-      const { data, error: fetchError } = await supabase.from("posts").select("*, author:profiles(username, avatar_url)").order("created_at", { ascending: false });
-      if (fetchError) throw fetchError;
-      setPosts(data);
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to fetch posts");
+      }
+      const data = await res.json();
+      setPosts(data.posts || []);
+      setUser(data.user || null);
     } catch (err) {
-      console.error("Error fetching content:", err);
-      setError("Failed to fetch posts");
+      setError(err.message || "Failed to fetch posts");
     } finally {
       setLoading(false);
     }
@@ -47,41 +45,34 @@ export default function Content() {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await fetch(`${API_BASE_URL}/api/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
     navigate("/login");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    let imageUrl = null;
-
-    if (image) {
-      const fileExt = image.name.split(".").pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const { data, error } = await supabase.storage.from("post-images").upload(fileName, image);
-      if (error) {
-        setError("Image upload failed");
-        return;
-      }
-      const { data: publicUrlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
-      imageUrl = publicUrlData.publicUrl;
-    }
-
-    const payload = {
-      title,
-      content,
-      image_url: imageUrl,
-      user_id: user.id
-    };
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
+    if (image) formData.append("image", image);
 
     try {
-      if (editingId) {
-        const { error } = await supabase.from("posts").update(payload).eq("id", editingId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("posts").insert([payload]);
-        if (error) throw error;
+      let url = `${API_BASE_URL}/api/content`;
+      let method = editingId ? "PUT" : "POST";
+      if (editingId) url += `/${editingId}`;
+
+      const res = await fetch(url, {
+        method,
+        credentials: "include",
+        body: formData,
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to save post");
       }
       setTitle("");
       setContent("");
@@ -90,7 +81,7 @@ export default function Content() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       fetchContent();
     } catch (err) {
-      setError("Failed to save post");
+      setError(err.message || "Failed to save post");
     }
   };
 
@@ -105,18 +96,23 @@ export default function Content() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this post?")) return;
     try {
-      const { error } = await supabase.from("posts").delete().eq("id", id);
-      if (error) throw error;
+      const res = await fetch(`${API_BASE_URL}/api/content/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Delete failed");
+      }
       fetchContent();
     } catch (err) {
-      setError("Delete failed");
+      setError(err.message || "Delete failed");
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
       <Nav handleLogout={handleLogout} />
-
       <div className="max-w-2xl mx-auto mt-6 p-4 bg-white rounded shadow-md">
         <h2 className="text-xl font-semibold mb-4">{editingId ? "Edit Post" : "Create a Post"}</h2>
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
@@ -169,7 +165,6 @@ export default function Content() {
           </div>
         </form>
       </div>
-
       <div className="max-w-2xl mx-auto mt-6 p-4">
         {loading && <p className="text-center text-gray-500">Loading posts...</p>}
         {!loading && posts.length === 0 && <p className="text-center text-gray-500">No posts yet.</p>}
@@ -178,11 +173,11 @@ export default function Content() {
             <div className="mb-2">
               <h3 className="font-bold text-lg">{post.title}</h3>
               <p className="text-gray-600 whitespace-pre-line">{post.content}</p>
-              {post.image_url && (
-                <img src={post.image_url} alt="Post" className="w-full h-auto mt-4 rounded-md" />
+              {post.images && post.images.length > 0 && (
+                <img src={post.images[0].url} alt="Post" className="w-full h-auto mt-4 rounded-md" />
               )}
             </div>
-            {user && user.id === post.user_id && (
+            {user && user.id === post.author_id && (
               <div className="flex space-x-4">
                 <button onClick={() => handleEdit(post)} className="text-blue-500 hover:underline">Edit</button>
                 <button onClick={() => handleDelete(post.id)} className="text-red-500 hover:underline">Delete</button>
