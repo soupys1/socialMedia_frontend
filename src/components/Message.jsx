@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Nav from "./Nav";
 
-const API_BASE_URL = "https://socialmedia-backend-k1nf.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://socialmedia-backend-k1nf.onrender.com";
 
 export default function Message() {
   const { id: friendIdParam } = useParams();
