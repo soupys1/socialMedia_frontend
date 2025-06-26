@@ -20,47 +20,46 @@ export default function Profile() {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
-  const fetchProfile = async () => {
-    setLoading(true);
-    setError(null);
-    const query = id ? `?id=${id}` : "";
-    const fetchUrl = `${API_BASE_URL}/api/profile${query}`;
-    console.log("Profile fetch URL:", fetchUrl);
-    console.log("Current location:", location.pathname);
-    if (fetchUrl.includes("profile:1") || location.pathname.includes("profile:1")) {
-      setError("Invalid profile URL detected! Please contact support.");
-      setLoading(false);
-      return;
-    }
-    try {
-      const res = await fetch(fetchUrl, {
-        credentials: "include",
-      });
-      console.log("Profile response status:", res.status);
-      if (res.status === 401) {
-        console.log("Unauthorized, redirecting to login");
-        navigate("/login");
-        return;
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError(null);
+      const query = id ? `?id=${id}` : "";
+      const fetchUrl = `${API_BASE_URL}/api/profile${query}`;
+      console.log("Profile fetch URL:", fetchUrl);
+      console.log("Current location:", location.pathname);
+
+      try {
+        const res = await fetch(fetchUrl, {
+          credentials: "include",
+        });
+        console.log("Profile response status:", res.status);
+
+        if (res.status === 401) {
+          setError("You are not authorized. Please log in again.");
+          navigate("/login");
+          return;
+        }
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Failed to load profile");
+        }
+        const data = await res.json();
+        setViewer(data.viewer);
+        setUser(data.profileUser);
+        setPosts(data.posts || []);
+        setFriends(data.friends || []);
+        setIncomingRequests(data.incomingRequests || []);
+      } catch (err) {
+        setError(err.message || "Could not load profile.");
+      } finally {
+        setLoading(false);
       }
-      if (!res.ok) {
-        const errData = await res.json();
-        console.error("Profile fetch error:", errData);
-        throw new Error(errData.error || "Failed to load profile");
-      }
-      const data = await res.json();
-      console.log("Profile data received:", data);
-      setViewer(data.viewer);
-      setUser(data.profileUser);
-      setPosts(data.posts || []);
-      setFriends(data.friends || []);
-      setIncomingRequests(data.incomingRequests || []);
-    } catch (err) {
-      console.error("Profile fetch error:", err);
-      setError(err.message || "Could not load profile.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchProfile();
+    // eslint-disable-next-line
+  }, [id, location.pathname]);
 
   const handleUploadProfilePicture = async (e) => {
     e.preventDefault();
@@ -96,11 +95,6 @@ export default function Profile() {
     });
     navigate("/login");
   };
-
-  useEffect(() => {
-    fetchProfile();
-    // eslint-disable-next-line
-  }, [id, location.pathname]);
 
   if (error) {
     return (
