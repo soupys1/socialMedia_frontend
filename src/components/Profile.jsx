@@ -26,12 +26,10 @@ export default function Profile() {
     const fetchUrl = `${API_BASE_URL}/api/profile${query}`;
     console.log("Profile fetch URL:", fetchUrl);
     try {
-      console.log("Fetching profile...");
       const res = await fetch(fetchUrl, {
         credentials: "include",
       });
       console.log("Profile response status:", res.status);
-      
       if (res.status === 401) {
         console.log("Unauthorized, redirecting to login");
         navigate("/login");
