@@ -2,7 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Nav from "./Nav";
 
-const API_BASE_URL = "https://socialmedia-backend-k1nf.onrender.com";
+// Use environment variable or fallback to Render backend
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://socialmedia-backend-k1nf.onrender.com";
+console.log("API_BASE_URL:", API_BASE_URL);
 
 export default function Profile() {
   const { id } = useParams();
