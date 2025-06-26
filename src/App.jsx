@@ -6,6 +6,7 @@ import Edit from './components/Edit';
 import Profile from './components/Profile';
 import Message from './components/Message';
 import PrivateRoute from './components/PrivateRoute';
+import Friends from './components/Friends';
 
 export default function App() {
   return (
@@ -43,6 +44,22 @@ export default function App() {
           element={
             <PrivateRoute>
               <Profile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <PrivateRoute>
+              <Friends />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <PrivateRoute>
+              <Friends showMessagesList />
             </PrivateRoute>
           }
         />

@@ -56,6 +56,18 @@ export default function Nav({ handleLogout }) {
               >
                 Profile
               </Link>
+              <Link
+                to="/friends"
+                className="text-gray-700 hover:text-blue-600 transition"
+              >
+                Friends
+              </Link>
+              <Link
+                to="/messages"
+                className="text-gray-700 hover:text-blue-600 transition"
+              >
+                Messages
+              </Link>
             </div>
           </div>
           <div className="flex items-center space-x-4">
