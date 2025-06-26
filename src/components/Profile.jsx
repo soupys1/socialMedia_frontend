@@ -117,13 +117,15 @@ export default function Profile() {
     );
   }
 
+  console.log("user.profile_picture:", user && user.profile_picture);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Nav handleLogout={handleLogout} />
       <div className="py-6 px-4 sm:px-6 lg:px-8">
         <div className="bg-white shadow-lg p-6 rounded-lg max-w-3xl mx-auto">
           <div className="flex items-center space-x-4 mb-6">
-            {user.profile_picture ? (
+            {user.profile_picture && user.profile_picture.startsWith("http") ? (
               <img
                 src={user.profile_picture}
                 alt={`${user.username}'s profile picture`}
