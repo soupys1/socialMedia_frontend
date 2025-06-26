@@ -22,24 +22,31 @@ export default function Profile() {
     setError(null);
     const query = id ? `?id=${id}` : "";
     try {
+      console.log("Fetching profile...");
       const res = await fetch(`${API_BASE_URL}/api/profile${query}`, {
         credentials: "include",
       });
+      console.log("Profile response status:", res.status);
+      
       if (res.status === 401) {
+        console.log("Unauthorized, redirecting to login");
         navigate("/login");
         return;
       }
       if (!res.ok) {
         const errData = await res.json();
+        console.error("Profile fetch error:", errData);
         throw new Error(errData.error || "Failed to load profile");
       }
       const data = await res.json();
+      console.log("Profile data received:", data);
       setViewer(data.viewer);
       setUser(data.profileUser);
       setPosts(data.posts || []);
       setFriends(data.friends || []);
       setIncomingRequests(data.incomingRequests || []);
     } catch (err) {
+      console.error("Profile fetch error:", err);
       setError(err.message || "Could not load profile.");
     } finally {
       setLoading(false);

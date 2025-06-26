@@ -17,6 +17,7 @@ export default function Login() {
     setLoading(true);
 
     try {
+      console.log("Attempting login...");
       const response = await fetch(
         "https://socialmedia-backend-k1nf.onrender.com/api/login",
         {
@@ -30,7 +31,9 @@ export default function Login() {
         }
       );
 
+      console.log("Login response status:", response.status);
       const data = await response.json();
+      console.log("Login response data:", data);
 
       if (!response.ok) {
         setError(data.error || "Login failed");
@@ -38,9 +41,11 @@ export default function Login() {
         return;
       }
 
+      console.log("Login successful, navigating to profile...");
       // Success: navigate to profile
       navigate("/profile");
     } catch (err) {
+      console.error("Login error:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
