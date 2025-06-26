@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import Nav from "./Nav";
 
 // Use environment variable or fallback to Render backend
@@ -8,6 +8,7 @@ console.log("API_BASE_URL:", API_BASE_URL);
 
 export default function Profile() {
   const { id } = useParams();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [viewer, setViewer] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -25,6 +26,12 @@ export default function Profile() {
     const query = id ? `?id=${id}` : "";
     const fetchUrl = `${API_BASE_URL}/api/profile${query}`;
     console.log("Profile fetch URL:", fetchUrl);
+    console.log("Current location:", location.pathname);
+    if (fetchUrl.includes("profile:1") || location.pathname.includes("profile:1")) {
+      setError("Invalid profile URL detected! Please contact support.");
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch(fetchUrl, {
         credentials: "include",
@@ -93,13 +100,14 @@ export default function Profile() {
   useEffect(() => {
     fetchProfile();
     // eslint-disable-next-line
-  }, [id]);
+  }, [id, location.pathname]);
 
   if (error) {
     return (
       <div className="min-h-screen bg-gray-100">
         <Nav handleLogout={handleLogout} />
         <div className="text-center mt-10 text-red-500" role="alert">{error}</div>
+        <div className="text-center mt-2 text-gray-500">URL: {location.pathname}</div>
       </div>
     );
   }
