@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
+const API_BASE_URL = "https://socialmedia-backend-k1nf.onrender.com";
+
 export default function Nav() {
   const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
@@ -9,7 +11,7 @@ export default function Nav() {
   useEffect(() => {
     async function fetchFriends() {
       try {
-        const res = await fetch("/api/profile", { credentials: "include" });
+        const res = await fetch(`${API_BASE_URL}/api/profile`, { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch friends");
         const data = await res.json();
         setFriends(data.friends || []);
@@ -23,7 +25,7 @@ export default function Nav() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("/api/logout", {
+    await fetch(`${API_BASE_URL}/api/logout`, {
       method: "POST",
       credentials: "include",
     });
@@ -42,15 +44,12 @@ export default function Nav() {
 
   return (
     <nav className="bg-white shadow-md py-6 px-10 flex justify-between items-center">
-      {/* Brand Logo */}
       <h1
         className="text-3xl font-extrabold text-blue-600 tracking-wide cursor-pointer"
         onClick={() => navigate("/content")}
       >
         joinAHack
       </h1>
-
-      {/* Navigation Links */}
       <div className="flex items-center gap-6 text-base font-medium">
         <button
           onClick={() => navigate("/profile")}

@@ -1,24 +1,19 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './components/login';
+import Login from './components/Login';
 import Signup from './components/Signup';
 import Content from './components/Content';
 import Edit from './components/Edit';
 import Profile from './components/Profile';
-import Message from './components/Message';  // Make sure this exists
+import Message from './components/Message';
 import PrivateRoute from './components/PrivateRoute';
 
 export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" />} />
-
-        {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-
-        {/* Protected routes */}
         <Route
           path="/content"
           element={
@@ -59,8 +54,6 @@ export default function App() {
             </PrivateRoute>
           }
         />
-
-        {/* Fallback for unknown routes */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

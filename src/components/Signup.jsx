@@ -1,13 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase client
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_KEY
-);
+const API_BASE_URL = "https://socialmedia-backend-k1nf.onrender.com";
 
 export default function Signup() {
   const [formData, setFormData] = useState({
@@ -29,29 +24,21 @@ export default function Signup() {
     setError("");
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            username: formData.username,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-          },
-        },
+      const res = await fetch(`${API_BASE_URL}/api/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Signup failed. Please try again.");
       navigate("/login");
     } catch (err) {
-      console.error("Signup error:", err);
       setError(err.message || "Signup failed. Please try again.");
     }
   };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-animated-gradient overflow-hidden">
-      {/* Floating circles */}
       <div className="floating-circle" style={{ width: 80, height: 80, top: "10%", left: "15%", animationDelay: "0s" }} />
       <div className="floating-circle" style={{ width: 50, height: 50, top: "60%", left: "25%", animationDelay: "2s" }} />
       <div className="floating-circle" style={{ width: 120, height: 120, top: "70%", left: "75%", animationDelay: "4s" }} />
