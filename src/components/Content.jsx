@@ -175,9 +175,94 @@ export default function Content() {
                 >
                   Edit
                 </Link>
-                <span className="text-gray-500">
-                  {post.likes || 0} likes
-                </span>
+                <button
+                  onClick={async () => {
+                    await fetch(`${API_BASE_URL}/api/content/${post.id}/like`, {
+                      method: "POST",
+                      credentials: "include",
+                    });
+                    fetchPosts();
+                  }}
+                  className="text-blue-500 hover:underline ml-4"
+                >
+                  Like ({post.likes || 0})
+                </button>
+                {user && post.author?.id === user.id && (
+                  <button
+                    onClick={async () => {
+                      await fetch(`${API_BASE_URL}/api/content/${post.id}`, {
+                        method: "DELETE",
+                        credentials: "include",
+                      });
+                      fetchPosts();
+                    }}
+                    className="text-red-500 hover:underline ml-4"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+              {/* Comments Section */}
+              <div className="mt-4">
+                <h4 className="font-semibold mb-2">Comments</h4>
+                {post.comments && post.comments.length > 0 ? (
+                  post.comments.map((comment) => (
+                    <div key={comment.id} className="flex items-center justify-between bg-gray-50 rounded p-2 mb-2">
+                      <div>
+                        <span className="font-bold">{comment.author?.username || 'User'}:</span> {comment.content}
+                        <span className="text-xs text-gray-400 ml-2">{new Date(comment.created_at).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={async () => {
+                            await fetch(`${API_BASE_URL}/api/content/${post.id}/comment/${comment.id}/like`, {
+                              method: "POST",
+                              credentials: "include",
+                            });
+                            fetchPosts();
+                          }}
+                          className="text-blue-400 hover:underline text-xs"
+                        >
+                          Like ({comment.likes || 0})
+                        </button>
+                        {user && comment.author?.id === user.id && (
+                          <button
+                            onClick={async () => {
+                              await fetch(`${API_BASE_URL}/api/content/${post.id}/comment/${comment.id}`, {
+                                method: "DELETE",
+                                credentials: "include",
+                              });
+                              fetchPosts();
+                            }}
+                            className="text-red-400 hover:underline text-xs"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-400 text-sm">No comments yet.</p>
+                )}
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const comment = e.target.elements.comment.value;
+                    await fetch(`${API_BASE_URL}/api/content/${post.id}/comment`, {
+                      method: "POST",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ content: comment }),
+                    });
+                    fetchPosts();
+                    e.target.reset();
+                  }}
+                  className="flex gap-2 mt-2"
+                >
+                  <input name="comment" placeholder="Add a comment..." required className="flex-1 border rounded px-2 py-1" />
+                  <button type="submit" className="bg-blue-500 text-white px-3 py-1 rounded">Comment</button>
+                </form>
               </div>
             </div>
           ))}

@@ -156,6 +156,21 @@ export default function Profile() {
                 {user.first_name} {user.last_name} (@{user.username})
               </h1>
               <p className="text-gray-600">{user.email}</p>
+              {viewer.id !== user.id && (
+                <button
+                  onClick={async () => {
+                    await fetch(`${API_BASE_URL}/api/profile/${user.id}`, {
+                      method: "POST",
+                      credentials: "include",
+                    });
+                    alert("Friend request sent!");
+                    window.location.reload();
+                  }}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition mt-2"
+                >
+                  Add Friend
+                </button>
+              )}
             </div>
           </div>
           <form onSubmit={handleUploadProfilePicture} className="mb-6">
