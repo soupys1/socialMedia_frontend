@@ -1,48 +1,73 @@
-import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import Nav from "./Nav";
 
-const API_BASE_URL = "https://socialmedia-backend-k1nf.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://socialmedia-backend-k1nf.onrender.com";
 
 export default function Content() {
   const [posts, setPosts] = useState([]);
   const [user, setUser] = useState(null);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [image, setImage] = useState(null);
-  const [editingId, setEditingId] = useState(null);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const fileInputRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [newPost, setNewPost] = useState({ title: "", content: "" });
+  const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
 
-  const fetchContent = async () => {
-    setLoading(true);
+  const fetchPosts = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/content`, {
+      const response = await fetch(`${API_BASE_URL}/api/content`, {
         credentials: "include",
       });
-      if (res.status === 401) {
+      if (response.status === 401) {
         navigate("/login");
         return;
       }
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to fetch posts");
+      if (!response.ok) {
+        throw new Error("Failed to fetch posts");
       }
-      const data = await res.json();
-      setPosts(data.posts || []);
-      setUser(data.user || null);
+      const data = await response.json();
+      setPosts(data.posts);
+      setUser(data.user);
     } catch (err) {
-      setError(err.message || "Failed to fetch posts");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchContent();
+    fetchPosts();
   }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!newPost.title || !newPost.content) return;
+
+    const formData = new FormData();
+    formData.append("title", newPost.title);
+    formData.append("content", newPost.content);
+    if (selectedFile) {
+      formData.append("image", selectedFile);
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/content`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create post");
+      }
+
+      setNewPost({ title: "", content: "" });
+      setSelectedFile(null);
+      fetchPosts();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const handleLogout = async () => {
     await fetch(`${API_BASE_URL}/api/logout`, {
@@ -52,139 +77,111 @@ export default function Content() {
     navigate("/login");
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("content", content);
-    if (image) formData.append("image", image);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <Nav handleLogout={handleLogout} />
+        <div className="text-center mt-10 text-gray-600">Loading...</div>
+      </div>
+    );
+  }
 
-    try {
-      let url = `${API_BASE_URL}/api/content`;
-      let method = editingId ? "PUT" : "POST";
-      if (editingId) url += `/${editingId}`;
-
-      const res = await fetch(url, {
-        method,
-        credentials: "include",
-        body: formData,
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to save post");
-      }
-      setTitle("");
-      setContent("");
-      setImage(null);
-      setEditingId(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      fetchContent();
-    } catch (err) {
-      setError(err.message || "Failed to save post");
-    }
-  };
-
-  const handleEdit = (post) => {
-    setEditingId(post.id);
-    setTitle(post.title);
-    setContent(post.content);
-    setImage(null);
-    setError("");
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this post?")) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/content/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Delete failed");
-      }
-      fetchContent();
-    } catch (err) {
-      setError(err.message || "Delete failed");
-    }
-  };
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <Nav handleLogout={handleLogout} />
+        <div className="text-center mt-10 text-red-500">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
       <Nav handleLogout={handleLogout} />
-      <div className="max-w-2xl mx-auto mt-6 p-4 bg-white rounded shadow-md">
-        <h2 className="text-xl font-semibold mb-4">{editingId ? "Edit Post" : "Create a Post"}</h2>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Title"
-            className="w-full mb-4 px-4 py-2 border rounded-md"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-          <textarea
-            placeholder="What's on your mind?"
-            className="w-full mb-4 px-4 py-2 border rounded-md"
-            rows="4"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-          />
-          <input
-            type="file"
-            accept="image/*"
-            className="w-full mb-4"
-            onChange={(e) => setImage(e.target.files[0])}
-            ref={fileInputRef}
-          />
-          <div className="flex justify-between items-center">
+      <div className="max-w-4xl mx-auto py-6 px-4">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-4">Create New Post</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Title
+              </label>
+              <input
+                type="text"
+                value={newPost.title}
+                onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+                className="shadow border rounded w-full py-2 px-3 text-gray-700"
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Content
+              </label>
+              <textarea
+                value={newPost.content}
+                onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                className="shadow border rounded w-full py-2 px-3 text-gray-700 h-32"
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Image (optional)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setSelectedFile(e.target.files[0])}
+                className="shadow border rounded w-full py-2 px-3 text-gray-700"
+              />
+            </div>
             <button
               type="submit"
-              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+              className="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition"
             >
-              {editingId ? "Update" : "Post"}
+              Create Post
             </button>
-            {editingId && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingId(null);
-                  setTitle("");
-                  setContent("");
-                  setImage(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-                className="text-gray-600 hover:underline"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-      <div className="max-w-2xl mx-auto mt-6 p-4">
-        {loading && <p className="text-center text-gray-500">Loading posts...</p>}
-        {!loading && posts.length === 0 && <p className="text-center text-gray-500">No posts yet.</p>}
-        {!loading && posts.map((post) => (
-          <div key={post.id} className="bg-white rounded shadow-md p-4 mb-6">
-            <div className="mb-2">
-              <h3 className="font-bold text-lg">{post.title}</h3>
-              <p className="text-gray-600 whitespace-pre-line">{post.content}</p>
-              {post.images && post.images.length > 0 && (
-                <img src={post.images[0].url} alt="Post" className="w-full h-auto mt-4 rounded-md" />
-              )}
-            </div>
-            {user && user.id === post.author_id && (
-              <div className="flex space-x-4">
-                <button onClick={() => handleEdit(post)} className="text-blue-500 hover:underline">Edit</button>
-                <button onClick={() => handleDelete(post.id)} className="text-red-500 hover:underline">Delete</button>
+          </form>
+        </div>
+
+        <div className="space-y-6">
+          {posts.map((post) => (
+            <div key={post.id} className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                  {post.author?.username?.[0]?.toUpperCase() || "U"}
+                </div>
+                <div>
+                  <h3 className="font-semibold">{post.author?.username || "Unknown"}</h3>
+                  <p className="text-sm text-gray-500">
+                    {new Date(post.created_at).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+              <h2 className="text-xl font-bold mb-2">{post.title}</h2>
+              <p className="text-gray-700 mb-4">{post.content}</p>
+              {post.images && post.images.length > 0 && (
+                <img
+                  src={post.images[0].url}
+                  alt="Post"
+                  className="w-full h-auto rounded-md mb-4"
+                />
+              )}
+              <div className="flex justify-between items-center">
+                <Link
+                  to={`/edit/${post.id}`}
+                  className="text-blue-500 hover:underline"
+                >
+                  Edit
+                </Link>
+                <span className="text-gray-500">
+                  {post.likes || 0} likes
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

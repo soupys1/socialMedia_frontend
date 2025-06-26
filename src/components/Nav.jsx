@@ -1,9 +1,10 @@
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
-const API_BASE_URL = "https://socialmedia-backend-k1nf.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://socialmedia-backend-k1nf.onrender.com";
 
-export default function Nav() {
+export default function Nav({ handleLogout }) {
   const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,14 +25,6 @@ export default function Nav() {
     fetchFriends();
   }, []);
 
-  const handleLogout = async () => {
-    await fetch(`${API_BASE_URL}/api/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    navigate("/login");
-  };
-
   const firstFriendId = friends.length > 0 ? friends[0].friend.id : null;
 
   const handleMessageClick = () => {
@@ -43,43 +36,37 @@ export default function Nav() {
   };
 
   return (
-    <nav className="bg-white shadow-md py-6 px-10 flex justify-between items-center">
-      <h1
-        className="text-3xl font-extrabold text-blue-600 tracking-wide cursor-pointer"
-        onClick={() => navigate("/content")}
-      >
-        joinAHack
-      </h1>
-      <div className="flex items-center gap-6 text-base font-medium">
-        <button
-          onClick={() => navigate("/profile")}
-          className="text-blue-500 hover:underline"
-        >
-          Profile
-        </button>
-        <button
-          onClick={handleMessageClick}
-          className={`${
-            firstFriendId
-              ? "text-blue-500 hover:underline cursor-pointer"
-              : "text-gray-400 cursor-not-allowed"
-          }`}
-          disabled={!firstFriendId}
-        >
-          Message
-        </button>
-        <button
-          onClick={() => navigate("/content")}
-          className="text-blue-500 hover:underline"
-        >
-          Home
-        </button>
-        <button
-          onClick={handleLogout}
-          className="text-red-500 hover:underline"
-        >
-          Logout
-        </button>
+    <nav className="bg-white shadow-lg">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex justify-between items-center py-4">
+          <div className="flex items-center space-x-8">
+            <Link to="/content" className="text-xl font-bold text-blue-600">
+              Social Media App
+            </Link>
+            <div className="flex space-x-4">
+              <Link
+                to="/content"
+                className="text-gray-700 hover:text-blue-600 transition"
+              >
+                Home
+              </Link>
+              <Link
+                to="/profile"
+                className="text-gray-700 hover:text-blue-600 transition"
+              >
+                Profile
+              </Link>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
       </div>
     </nav>
   );

@@ -2,17 +2,18 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API_BASE_URL = "https://socialmedia-backend-k1nf.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://socialmedia-backend-k1nf.onrender.com";
 
 export default function Signup() {
   const [formData, setFormData] = useState({
     username: "",
+    email: "",
     password: "",
     firstName: "",
     lastName: "",
-    email: "",
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -22,18 +23,29 @@ export default function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/signup`, {
+      const response = await fetch(`${API_BASE_URL}/api/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Signup failed. Please try again.");
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Signup failed");
+        setLoading(false);
+        return;
+      }
+
+      // Success: navigate to login
       navigate("/login");
     } catch (err) {
-      setError(err.message || "Signup failed. Please try again.");
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,10 +115,10 @@ export default function Signup() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           transition={{ type: "spring", stiffness: 300 }}
-          disabled={Object.values(formData).some((v) => !v)}
+          disabled={loading || Object.values(formData).some((v) => !v)}
           aria-label="Sign up"
         >
-          Sign Up
+          {loading ? "Creating account..." : "Sign Up"}
         </motion.button>
 
         <p className="text-center text-sm mt-4">
