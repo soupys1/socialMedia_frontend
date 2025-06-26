@@ -1,13 +1,5 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@supabase/supabase-js";
-
-// Initialize Supabase client
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || "https://your-supabase-url.supabase.co",
-  import.meta.env.VITE_SUPABASE_KEY || "your-supabase-anon-key"
-);
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -25,196 +17,98 @@ export default function Login() {
     setLoading(true);
 
     try {
-      console.log("🔄 Starting login process...");
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (error) {
-        console.error("❌ Login error:", { message: error.message, details: error });
-        if (error.message === "Email not confirmed") {
-          setError("Please confirm your email. Check your inbox or resend the confirmation.");
-        } else {
-          setError(error.message || "Login failed");
+      const response = await fetch(
+        "https://socialmedia-backend-k1nf.onrender.com/api/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // Important for cookies!
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
         }
-      } else {
-        console.log("✅ Login success:", { user: data.user, session: data.session });
-        
-        // Additional session verification
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log("📋 Current session after login:", session);
-        
-        // Add a small delay to ensure auth state is updated
-        setTimeout(() => {
-          console.log("🔄 Attempting navigation to /profile...");
-          try {
-            navigate("/profile");
-            console.log("✅ Navigation called successfully");
-          } catch (navError) {
-            console.error("❌ Navigation error:", navError);
-            setError("Navigation failed. Please refresh and try again.");
-          }
-        }, 100);
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Login failed");
+        setLoading(false);
+        return;
       }
+
+      // Success: navigate to profile
+      navigate("/profile");
     } catch (err) {
-      console.error("💥 Unexpected login error:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Debug function to test navigation manually
-  const testNavigation = () => {
-    console.log("🧪 Testing manual navigation to /profile...");
-    navigate("/profile");
-  };
-
-  const resendConfirmation = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: formData.email,
-      });
-      if (error) throw error;
-      setError("Confirmation email resent. Please check your inbox.");
-    } catch (err) {
-      console.error("Resend error:", err.message);
-      setError("Failed to resend confirmation. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resetPassword = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: "https://social-media-frontend-c79j.vercel.app/reset-password",
-      });
-      if (error) throw error;
-      setError("Password reset email sent. Please check your inbox.");
-    } catch (err) {
-      console.error("Reset error:", err.message);
-      setError("Failed to send reset email. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-animated-gradient overflow-hidden">
-      {/* Floating Background Circles */}
-      <div className="floating-circle" style={{ width: 80, height: 80, top: "10%", left: "15%", animationDelay: "0s" }} />
-      <div className="floating-circle" style={{ width: 50, height: 50, top: "60%", left: "25%", animationDelay: "2s" }} />
-      <div className="floating-circle" style={{ width: 120, height: 120, top: "70%", left: "75%", animationDelay: "4s" }} />
-
-      <motion.form
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <form
         onSubmit={handleSubmit}
-        className="relative z-10 bg-white bg-opacity-90 backdrop-blur-md shadow-md rounded px-8 pt-6 pb-8 w-full max-w-sm"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        role="form"
-        aria-labelledby="login-title"
+        className="bg-white shadow-md rounded px-8 pt-6 pb-8 w-full max-w-sm"
       >
-        <h2 id="login-title" className="text-2xl font-bold mb-6 text-center">
-          Login
-        </h2>
-
-        {/* Debug button - remove this in production */}
+        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+        {error && (
+          <p className="text-red-500 text-sm mb-4 text-center" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="mb-4">
+          <label
+            htmlFor="email"
+            className="block text-gray-700 text-sm font-bold mb-2"
+          >
+            Email
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="shadow border rounded w-full py-2 px-3 text-gray-700"
+            required
+            autoComplete="username"
+          />
+        </div>
+        <div className="mb-6">
+          <label
+            htmlFor="password"
+            className="block text-gray-700 text-sm font-bold mb-2"
+          >
+            Password
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="shadow border rounded w-full py-2 px-3 text-gray-700"
+            required
+            autoComplete="current-password"
+          />
+        </div>
         <button
-          type="button"
-          onClick={testNavigation}
-          className="mb-4 bg-gray-500 text-white font-bold py-1 px-2 rounded text-xs w-full"
-        >
-          🧪 Test Navigation to Profile
-        </button>
-
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              key="error-msg"
-              className="text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <p className="text-red-500 text-sm mb-2" role="alert">
-                {error}
-              </p>
-              {error.includes("confirm") && (
-                <motion.button
-                  onClick={resendConfirmation}
-                  className="text-blue-500 text-sm hover:underline mt-1"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  disabled={loading}
-                  aria-label="Resend confirmation email"
-                >
-                  {loading ? "Sending..." : "Resend Confirmation"}
-                </motion.button>
-              )}
-              {error.includes("Login failed") && (
-                <motion.button
-                  onClick={resetPassword}
-                  className="text-blue-500 text-sm hover:underline mt-1"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  disabled={loading}
-                  aria-label="Reset password"
-                >
-                  {loading ? "Sending..." : "Forgot Password?"}
-                </motion.button>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {["email", "password"].map((field) => (
-          <div className="mb-4" key={field}>
-            <label htmlFor={field} className="block text-gray-700 text-sm font-bold mb-2">
-              {field.charAt(0).toUpperCase() + field.slice(1)}
-            </label>
-            <input
-              id={field}
-              name={field}
-              type={field === "password" ? "password" : "email"}
-              value={formData[field]}
-              onChange={handleChange}
-              className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:ring-2 focus:ring-blue-500"
-              required
-              autoComplete={field === "email" ? "username" : "current-password"}
-              aria-required="true"
-            />
-          </div>
-        ))}
-
-        <motion.button
           type="submit"
           className="bg-blue-500 text-white font-bold py-2 px-4 rounded w-full hover:bg-blue-600 transition"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 300 }}
-          disabled={loading || Object.values(formData).some((v) => !v)}
-          aria-label="Login"
+          disabled={loading || !formData.email || !formData.password}
         >
           {loading ? "Logging in..." : "Login"}
-        </motion.button>
-
+        </button>
         <p className="text-center text-sm mt-4">
           Don't have an account?{" "}
           <Link to="/signup" className="text-blue-500 hover:underline">
             Sign up
           </Link>
         </p>
-      </motion.form>
+      </form>
     </div>
   );
 }
