@@ -115,7 +115,7 @@ export default function Signup() {
             Log In
           </Link>
         </p>
-      </motion.form>
+      </motion.form
     </div>
   );
 }
