@@ -149,11 +149,13 @@ export default function Content() {
           {posts.map((post) => (
             <div key={post.id} className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                <Link to={`/profile/${post.author?.id}`} className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3 hover:ring-2 hover:ring-blue-400 transition">
                   {post.author?.username?.[0]?.toUpperCase() || "U"}
-                </div>
+                </Link>
                 <div>
-                  <h3 className="font-semibold">{post.author?.username || "Unknown"}</h3>
+                  <Link to={`/profile/${post.author?.id}`} className="font-semibold text-blue-600 hover:underline">
+                    {post.author?.username || "Unknown"}
+                  </Link>
                   <p className="text-sm text-gray-500">
                     {new Date(post.created_at).toLocaleDateString()}
                   </p>
@@ -168,39 +170,74 @@ export default function Content() {
                   className="w-full h-auto rounded-md mb-4"
                 />
               )}
-              <div className="flex justify-between items-center">
-                <Link
-                  to={`/edit/${post.id}`}
-                  className="text-blue-500 hover:underline"
-                >
-                  Edit
-                </Link>
-                <button
-                  onClick={async () => {
-                    await fetch(`${API_BASE_URL}/api/content/${post.id}/like`, {
-                      method: "POST",
-                      credentials: "include",
-                    });
-                    fetchPosts();
-                  }}
-                  className="text-blue-500 hover:underline ml-4"
-                >
-                  Like ({post.likes || 0})
-                </button>
-                {user && post.author?.id === user.id && (
+              <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex gap-2 items-center">
                   <button
                     onClick={async () => {
-                      await fetch(`${API_BASE_URL}/api/content/${post.id}`, {
-                        method: "DELETE",
+                      await fetch(`${API_BASE_URL}/api/content/${post.id}/like`, {
+                        method: "POST",
                         credentials: "include",
                       });
                       fetchPosts();
                     }}
-                    className="text-red-500 hover:underline ml-4"
+                    className="text-blue-500 hover:underline"
                   >
-                    Delete
+                    Like ({post.likes || 0})
                   </button>
-                )}
+                  {/* Like author's profile */}
+                  {user && post.author?.id !== user.id && (
+                    <button
+                      onClick={async () => {
+                        await fetch(`${API_BASE_URL}/api/profile/${post.author.id}/like`, {
+                          method: "POST",
+                          credentials: "include",
+                        });
+                        alert('You liked this user!');
+                      }}
+                      className="text-pink-500 hover:underline"
+                    >
+                      Like Author
+                    </button>
+                  )}
+                  {/* Add Friend button if not self and not already a friend */}
+                  {user && post.author?.id !== user.id && !post.author?.is_friend && (
+                    <button
+                      onClick={async () => {
+                        await fetch(`${API_BASE_URL}/api/profile/${post.author.id}`, {
+                          method: "POST",
+                          credentials: "include",
+                        });
+                        alert('Friend request sent!');
+                        fetchPosts();
+                      }}
+                      className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition"
+                    >
+                      Add Friend
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2 items-center">
+                  <Link
+                    to={`/edit/${post.id}`}
+                    className="text-blue-500 hover:underline"
+                  >
+                    Edit
+                  </Link>
+                  {user && post.author?.id === user.id && (
+                    <button
+                      onClick={async () => {
+                        await fetch(`${API_BASE_URL}/api/content/${post.id}`, {
+                          method: "DELETE",
+                          credentials: "include",
+                        });
+                        fetchPosts();
+                      }}
+                      className="text-red-500 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
               {/* Comments Section */}
               <div className="mt-4">
