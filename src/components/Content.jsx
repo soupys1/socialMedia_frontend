@@ -86,11 +86,23 @@ export default function Content() {
   };
 
   const handleLogout = async () => {
-    await fetch(`${API_BASE_URL}/api/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    navigate("/login");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        console.error('Logout failed:', response.status);
+      }
+      
+      // Always navigate to login, even if logout request fails
+      navigate("/login");
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still navigate to login even if there's an error
+      navigate("/login");
+    }
   };
 
   if (loading) {
