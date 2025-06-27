@@ -191,7 +191,8 @@ export default function Message() {
               )}
               {messages.map((msg) => {
                 const isSender = msg.sender_id === viewer?.id;
-                const senderProfilePic = isSender ? viewer?.profile_picture : friend?.friend?.profile_picture;
+                const avatarUrl = isSender ? (msg.senderProfilePic && msg.senderProfilePic.startsWith('http') ? msg.senderProfilePic : null) : (msg.receiverProfilePic && msg.receiverProfilePic.startsWith('http') ? msg.receiverProfilePic : null);
+                const avatarInitial = isSender ? (viewer?.username?.[0]?.toUpperCase() || 'U') : (friend?.friend?.username?.[0]?.toUpperCase() || 'U');
                 const senderName = isSender ? viewer?.username : friend?.friend?.username || "Unknown";
                 const createdAt = new Date(msg.created_at);
                 const date = createdAt.toLocaleDateString();
@@ -204,13 +205,17 @@ export default function Message() {
                   >
                     {/* Receiver avatar (left) */}
                     {!isSender && (
-                      <img
-                        src={friend?.friend?.profile_picture && friend.friend.profile_picture.startsWith('http') ? friend.friend.profile_picture : undefined}
-                        alt={senderName}
-                        className="w-8 h-8 rounded-full object-cover bg-gray-300"
-                        style={{ minWidth: 32, minHeight: 32 }}
-                        onError={e => { e.target.onerror = null; e.target.src = ''; }}
-                      />
+                      avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={senderName}
+                          className="w-8 h-8 rounded-full object-cover bg-gray-300"
+                          style={{ minWidth: 32, minHeight: 32 }}
+                          onError={e => { e.target.onerror = null; e.target.src = ''; }}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-base font-bold text-blue-700" style={{ minWidth: 32, minHeight: 32 }}>{avatarInitial}</div>
+                      )
                     )}
                     <div
                       className={`flex flex-col ${isSender ? "items-end" : "items-start"} max-w-[70%]`}
@@ -233,13 +238,17 @@ export default function Message() {
                     </div>
                     {/* Sender avatar (right) */}
                     {isSender && (
-                      <img
-                        src={viewer?.profile_picture && viewer.profile_picture.startsWith('http') ? viewer.profile_picture : undefined}
-                        alt={senderName}
-                        className="w-8 h-8 rounded-full object-cover bg-gray-300"
-                        style={{ minWidth: 32, minHeight: 32 }}
-                        onError={e => { e.target.onerror = null; e.target.src = ''; }}
-                      />
+                      avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={senderName}
+                          className="w-8 h-8 rounded-full object-cover bg-gray-300"
+                          style={{ minWidth: 32, minHeight: 32 }}
+                          onError={e => { e.target.onerror = null; e.target.src = ''; }}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-base font-bold text-blue-700" style={{ minWidth: 32, minHeight: 32 }}>{avatarInitial}</div>
+                      )
                     )}
                   </div>
                 );

@@ -8,9 +8,10 @@ export default function Nav({ handleLogout }) {
   const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewer, setViewer] = useState(null);
 
   useEffect(() => {
-    async function fetchFriends() {
+    async function fetchFriendsAndViewer() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/profile`, { credentials: "include" });
         if (!res.ok) {
@@ -22,6 +23,7 @@ export default function Nav({ handleLogout }) {
         }
         const data = await res.json();
         setFriends(data.friends || []);
+        setViewer(data.viewer || null);
       } catch (err) {
         console.error("Error fetching friends:", err);
         // Don't set loading to false on error to allow retry
@@ -29,7 +31,7 @@ export default function Nav({ handleLogout }) {
         setLoading(false);
       }
     }
-    fetchFriends();
+    fetchFriendsAndViewer();
   }, [navigate]);
 
   const firstFriendId = friends.length > 0 ? friends[0].friend.id : null;
@@ -78,6 +80,19 @@ export default function Nav({ handleLogout }) {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            {viewer && (
+              viewer.profile_picture && viewer.profile_picture.startsWith('http') ? (
+                <img
+                  src={viewer.profile_picture}
+                  alt={viewer.username}
+                  className="w-9 h-9 rounded-full object-cover border border-blue-200 shadow-sm"
+                  style={{ minWidth: 36, minHeight: 36 }}
+                  onError={e => { e.target.onerror = null; e.target.src = ''; }}
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center text-lg font-bold text-blue-700 border border-blue-200 shadow-sm" style={{ minWidth: 36, minHeight: 36 }}>{viewer.username?.[0]?.toUpperCase() || 'U'}</div>
+              )
+            )}
             <button
               onClick={handleLogout}
               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"

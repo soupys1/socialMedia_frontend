@@ -126,11 +126,11 @@ export default function Content() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-200">
       <Nav handleLogout={handleLogout} />
-      <div className="max-w-4xl mx-auto py-6 px-4">
+      <div className="max-w-4xl mx-auto py-8 px-4">
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 shadow" role="alert">
             {error}
             <button 
               onClick={() => setError(null)} 
@@ -141,7 +141,7 @@ export default function Content() {
           </div>
         )}
         {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert">
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 shadow" role="alert">
             {success}
             <button 
               onClick={() => setSuccess(null)} 
@@ -151,79 +151,79 @@ export default function Content() {
             </button>
           </div>
         )}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-4">Create New Post</h2>
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-blue-100">
+          <h2 className="text-2xl font-extrabold mb-6 text-blue-600">Create New Post</h2>
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
+              <label className="block text-gray-700 text-sm font-semibold mb-2">
                 Title
               </label>
               <input
                 type="text"
                 value={newPost.title}
                 onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                className="shadow border rounded w-full py-2 px-3 text-gray-700"
+                className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 required
               />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
+              <label className="block text-gray-700 text-sm font-semibold mb-2">
                 Content
               </label>
               <textarea
                 value={newPost.content}
                 onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                className="shadow border rounded w-full py-2 px-3 text-gray-700 h-32"
+                className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700 h-32 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 required
               />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
+              <label className="block text-gray-700 text-sm font-semibold mb-2">
                 Image (optional)
               </label>
               <input
                 type="file"
                 accept="image/*"
                 onChange={(e) => setSelectedFile(e.target.files[0])}
-                className="shadow border rounded w-full py-2 px-3 text-gray-700"
+                className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700"
               />
             </div>
             <button
               type="submit"
-              className="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition"
+              className="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600 transition text-lg shadow-md"
             >
               Create Post
             </button>
           </form>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {posts.map((post) => (
-            <div key={post.id} className="bg-white rounded-lg shadow-md p-6">
+            <div key={post.id} className="bg-white rounded-2xl shadow-lg p-8 border border-blue-100">
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center mr-4 text-xl font-bold text-blue-600">
                   {post.author?.username?.[0]?.toUpperCase() || "U"}
                 </div>
                 <div>
-                  <h3 className="font-semibold">{post.author?.username || "Unknown"}</h3>
+                  <h3 className="font-semibold text-lg text-blue-700">{post.author?.username || "Unknown"}</h3>
                   <p className="text-sm text-gray-500">
                     {new Date(post.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
-              <h2 className="text-xl font-bold mb-2">{post.title}</h2>
+              <h2 className="text-xl font-bold mb-2 text-gray-800">{post.title}</h2>
               <p className="text-gray-700 mb-4">{post.content}</p>
               {post.images && post.images.length > 0 && (
                 <img
                   src={post.images[0].url}
                   alt="Post"
-                  className="w-full h-auto rounded-md mb-4"
+                  className="w-full h-auto rounded-md mb-4 border border-blue-100"
                 />
               )}
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mt-2 mb-2">
                 <Link
                   to={`/edit/${post.id}`}
-                  className="text-blue-500 hover:underline"
+                  className="text-blue-500 hover:underline font-semibold"
                 >
                   Edit
                 </Link>
@@ -255,7 +255,7 @@ export default function Content() {
                       setLikeLoading(prev => ({ ...prev, [post.id]: false }));
                     }
                   }}
-                  className={`ml-4 px-3 py-1 rounded text-sm font-semibold transition ${post.likedByUser ? "bg-blue-100 text-blue-600 border border-blue-400" : "text-blue-500 hover:bg-blue-100"}`}
+                  className={`ml-4 px-3 py-1 rounded-lg text-sm font-semibold transition shadow-sm border ${post.likedByUser ? "bg-blue-100 text-blue-600 border-blue-400" : "text-blue-500 hover:bg-blue-100 border-blue-200"}`}
                   disabled={!!likeLoading[post.id]}
                 >
                   {likeLoading[post.id] ? "..." : post.likedByUser ? `Unlike (${post.likes || 0})` : `Like (${post.likes || 0})`}
@@ -279,20 +279,20 @@ export default function Content() {
                         }
                       }
                     }}
-                    className="text-red-500 hover:underline ml-4"
+                    className="text-red-500 hover:underline ml-4 font-semibold"
                   >
                     Delete
                   </button>
                 )}
               </div>
               {/* Comments Section */}
-              <div className="mt-4">
-                <h4 className="font-semibold mb-2">Comments</h4>
+              <div className="mt-6">
+                <h4 className="font-semibold mb-3 text-blue-600">Comments</h4>
                 {post.comments && post.comments.length > 0 ? (
                   post.comments.map((comment) => (
-                    <div key={comment.id} className="flex items-center justify-between bg-gray-50 rounded p-2 mb-2">
+                    <div key={comment.id} className="flex items-center justify-between bg-blue-50 rounded p-3 mb-2 border border-blue-100">
                       <div>
-                        <span className="font-bold">{comment.author?.username || 'User'}:</span> {comment.content}
+                        <span className="font-bold text-blue-700">{comment.author?.username || 'User'}:</span> {comment.content}
                         <span className="text-xs text-gray-400 ml-2">{new Date(comment.created_at).toLocaleString()}</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -331,7 +331,7 @@ export default function Content() {
                               setCommentLikeLoading(prev => ({ ...prev, [comment.id]: false }));
                             }
                           }}
-                          className={`text-xs px-2 py-1 rounded font-semibold transition ${comment.likedByUser ? "bg-blue-100 text-blue-600 border border-blue-400" : "text-blue-400 hover:bg-blue-100"}`}
+                          className={`text-xs px-2 py-1 rounded-lg font-semibold transition shadow-sm border ${comment.likedByUser ? "bg-blue-100 text-blue-600 border-blue-400" : "text-blue-400 hover:bg-blue-100 border-blue-200"}`}
                           disabled={!!commentLikeLoading[comment.id]}
                         >
                           {commentLikeLoading[comment.id] ? "..." : comment.likedByUser ? `Unlike (${comment.likes || 0})` : `Like (${comment.likes || 0})`}
@@ -355,7 +355,7 @@ export default function Content() {
                                 }
                               }
                             }}
-                            className="text-red-400 hover:underline text-xs"
+                            className="text-red-400 hover:underline text-xs font-semibold"
                           >
                             Delete
                           </button>
@@ -385,24 +385,24 @@ export default function Content() {
                         throw new Error(errorData.error || "Failed to add comment");
                       }
                       e.target.reset();
-                      fetchPosts(); // Refresh posts to show new comment
+                      fetchPosts();
                     } catch (err) {
                       setError(err.message);
                     }
                   }}
-                  className="mt-2"
+                  className="mt-3"
                 >
                   <div className="flex gap-2">
                     <input
                       type="text"
                       name="comment"
                       placeholder="Add a comment..."
-                      className="flex-1 border rounded px-3 py-1 text-sm"
+                      className="flex-1 border border-blue-200 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                       required
                     />
                     <button
                       type="submit"
-                      className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition"
+                      className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition font-semibold shadow"
                     >
                       Comment
                     </button>
