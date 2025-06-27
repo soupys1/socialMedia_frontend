@@ -205,10 +205,10 @@ export default function Message() {
                       className={`flex flex-col ${isSender ? "items-end" : "items-start"} max-w-[70%]`}
                     >
                       <div
-                        className={`rounded-lg px-4 py-2 text-sm break-words ${
+                        className={`rounded-lg px-4 py-2 text-sm break-words shadow-md ${
                           isSender
                             ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
-                            : "bg-gray-100 text-gray-900"
+                            : "bg-gray-200 text-gray-900"
                         }`}
                         role="log"
                       >

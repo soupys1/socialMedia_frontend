@@ -48,7 +48,7 @@ export default function Nav({ handleLogout }) {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-8">
             <Link to="/content" className="text-xl font-bold text-blue-600">
-              Social Media App
+              JoinAHack
             </Link>
             <div className="flex space-x-4">
               <Link

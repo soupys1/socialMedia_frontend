@@ -52,21 +52,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-blue-200">
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded px-8 pt-6 pb-8 w-full max-w-sm"
+        className="bg-white shadow-xl rounded-2xl px-10 pt-8 pb-10 w-full max-w-md border border-blue-100"
       >
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+        <h2 className="text-3xl font-extrabold mb-8 text-center text-blue-600 tracking-tight">Sign In</h2>
         {error && (
           <p className="text-red-500 text-sm mb-4 text-center" role="alert">
             {error}
           </p>
         )}
-        <div className="mb-4">
+        <div className="mb-6">
           <label
             htmlFor="email"
-            className="block text-gray-700 text-sm font-bold mb-2"
+            className="block text-gray-700 text-sm font-semibold mb-2"
           >
             Email
           </label>
@@ -76,15 +76,15 @@ export default function Login() {
             type="email"
             value={formData.email}
             onChange={handleChange}
-            className="shadow border rounded w-full py-2 px-3 text-gray-700"
+            className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
             required
             autoComplete="username"
           />
         </div>
-        <div className="mb-6">
+        <div className="mb-8">
           <label
             htmlFor="password"
-            className="block text-gray-700 text-sm font-bold mb-2"
+            className="block text-gray-700 text-sm font-semibold mb-2"
           >
             Password
           </label>
@@ -94,21 +94,21 @@ export default function Login() {
             type="password"
             value={formData.password}
             onChange={handleChange}
-            className="shadow border rounded w-full py-2 px-3 text-gray-700"
+            className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
             required
             autoComplete="current-password"
           />
         </div>
         <button
           type="submit"
-          className="bg-blue-500 text-white font-bold py-2 px-4 rounded w-full hover:bg-blue-600 transition"
+          className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg w-full hover:bg-blue-600 transition text-lg shadow-md"
           disabled={loading || !formData.email || !formData.password}
         >
           {loading ? "Logging in..." : "Login"}
         </button>
-        <p className="text-center text-sm mt-4">
-          Don't have an account?{" "}
-          <Link to="/signup" className="text-blue-500 hover:underline">
+        <p className="text-center text-sm mt-6">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-blue-500 hover:underline font-semibold">
             Sign up
           </Link>
         </p>

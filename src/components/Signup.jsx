@@ -50,84 +50,86 @@ export default function Signup() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-animated-gradient overflow-hidden">
-      <div className="floating-circle" style={{ width: 80, height: 80, top: "10%", left: "15%", animationDelay: "0s" }} />
-      <div className="floating-circle" style={{ width: 50, height: 50, top: "60%", left: "25%", animationDelay: "2s" }} />
-      <div className="floating-circle" style={{ width: 120, height: 120, top: "70%", left: "75%", animationDelay: "4s" }} />
-
-      <motion.form
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-blue-200">
+      <form
         onSubmit={handleSubmit}
-        className="relative z-10 bg-white bg-opacity-90 backdrop-blur-md shadow-md rounded px-8 pt-6 pb-8 w-full max-w-md"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        role="form"
-        aria-labelledby="signup-title"
+        className="bg-white shadow-xl rounded-2xl px-10 pt-8 pb-10 w-full max-w-md border border-blue-100"
       >
-        <h2 id="signup-title" className="text-2xl font-bold mb-6 text-center text-gray-800">
-          Sign Up
-        </h2>
-
-        <AnimatePresence>
-          {error && (
-            <motion.p
-              key="error-msg"
-              className="text-red-500 text-sm mb-4 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              role="alert"
-            >
-              {error}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        {[
-          { id: "username", label: "Username" },
-          { id: "email", label: "Email", type: "email" },
-          { id: "firstName", label: "First Name" },
-          { id: "lastName", label: "Last Name" },
-          { id: "password", label: "Password", type: "password" },
-        ].map(({ id, label, type = "text" }) => (
-          <div className="mb-4" key={id}>
-            <label htmlFor={id} className="block text-gray-700 text-sm font-bold mb-2">
-              {label}
-            </label>
-            <input
-              id={id}
-              type={type}
-              name={id}
-              value={formData[id]}
-              onChange={handleChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-              aria-required="true"
-              placeholder={`Enter your ${label.toLowerCase()}`}
-            />
-          </div>
-        ))}
-
-        <motion.button
+        <h2 className="text-3xl font-extrabold mb-8 text-center text-blue-600 tracking-tight">Sign Up</h2>
+        {error && (
+          <p className="text-red-500 text-sm mb-4 text-center" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-semibold mb-2">Username</label>
+          <input
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-semibold mb-2">First Name</label>
+          <input
+            type="text"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-semibold mb-2">Last Name</label>
+          <input
+            type="text"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-semibold mb-2">Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+          />
+        </div>
+        <div className="mb-8">
+          <label className="block text-gray-700 text-sm font-semibold mb-2">Password</label>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="shadow border border-blue-200 rounded-lg w-full py-2 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+          />
+        </div>
+        <button
           type="submit"
-          className="bg-blue-500 text-white font-bold py-2 px-4 rounded w-full hover:bg-blue-600 transition disabled:opacity-50"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 300 }}
-          disabled={loading || Object.values(formData).some((v) => !v)}
-          aria-label="Sign up"
+          className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg w-full hover:bg-blue-600 transition text-lg shadow-md"
+          disabled={loading}
         >
-          {loading ? "Creating account..." : "Sign Up"}
-        </motion.button>
-
-        <p className="text-center text-sm mt-4">
-          Already have an account?{" "}
-          <Link to="/login" className="text-blue-500 hover:underline" aria-label="Go to login">
-            Log In
+          {loading ? "Signing up..." : "Sign Up"}
+        </button>
+        <p className="text-center text-sm mt-6">
+          Already have an account?{' '}
+          <Link to="/login" className="text-blue-500 hover:underline font-semibold">
+            Login
           </Link>
         </p>
-      </motion.form>
+      </form>
     </div>
   );
 }
