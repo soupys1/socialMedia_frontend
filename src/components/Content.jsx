@@ -12,6 +12,8 @@ export default function Content() {
   const [success, setSuccess] = useState(null);
   const [newPost, setNewPost] = useState({ title: "", content: "" });
   const [selectedFile, setSelectedFile] = useState(null);
+  const [likeLoading, setLikeLoading] = useState({});
+  const [commentLikeLoading, setCommentLikeLoading] = useState({});
   const navigate = useNavigate();
 
   const fetchPosts = async () => {
@@ -227,6 +229,7 @@ export default function Content() {
                 </Link>
                 <button
                   onClick={async () => {
+                    setLikeLoading(prev => ({ ...prev, [post.id]: true }));
                     try {
                       const response = await fetch(`${API_BASE_URL}/api/content/${post.id}/like`, {
                         method: "POST",
@@ -236,7 +239,6 @@ export default function Content() {
                         const errorData = await response.json();
                         throw new Error(errorData.error || "Failed to toggle like");
                       }
-                      // Optimistically update UI
                       setPosts(prevPosts => prevPosts.map(p =>
                         p.id === post.id
                           ? {
@@ -249,11 +251,14 @@ export default function Content() {
                       setError("");
                     } catch (err) {
                       setError(err.message);
+                    } finally {
+                      setLikeLoading(prev => ({ ...prev, [post.id]: false }));
                     }
                   }}
                   className={`ml-4 px-3 py-1 rounded text-sm font-semibold transition ${post.likedByUser ? "bg-blue-100 text-blue-600 border border-blue-400" : "text-blue-500 hover:bg-blue-100"}`}
+                  disabled={!!likeLoading[post.id]}
                 >
-                  {post.likedByUser ? `Unlike (${post.likes || 0})` : `Like (${post.likes || 0})`}
+                  {likeLoading[post.id] ? "..." : post.likedByUser ? `Unlike (${post.likes || 0})` : `Like (${post.likes || 0})`}
                 </button>
                 {user && post.author?.id === user.id && (
                   <button
@@ -293,6 +298,7 @@ export default function Content() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={async () => {
+                            setCommentLikeLoading(prev => ({ ...prev, [comment.id]: true }));
                             try {
                               const response = await fetch(`${API_BASE_URL}/api/content/${post.id}/comment/${comment.id}/like`, {
                                 method: "POST",
@@ -302,7 +308,6 @@ export default function Content() {
                                 const errorData = await response.json();
                                 throw new Error(errorData.error || "Failed to toggle like");
                               }
-                              // Optimistically update UI
                               setPosts(prevPosts => prevPosts.map(p =>
                                 p.id === post.id
                                   ? {
@@ -322,11 +327,14 @@ export default function Content() {
                               setError("");
                             } catch (err) {
                               setError(err.message);
+                            } finally {
+                              setCommentLikeLoading(prev => ({ ...prev, [comment.id]: false }));
                             }
                           }}
                           className={`text-xs px-2 py-1 rounded font-semibold transition ${comment.likedByUser ? "bg-blue-100 text-blue-600 border border-blue-400" : "text-blue-400 hover:bg-blue-100"}`}
+                          disabled={!!commentLikeLoading[comment.id]}
                         >
-                          {comment.likedByUser ? `Unlike (${comment.likes || 0})` : `Like (${comment.likes || 0})`}
+                          {commentLikeLoading[comment.id] ? "..." : comment.likedByUser ? `Unlike (${comment.likes || 0})` : `Like (${comment.likes || 0})`}
                         </button>
                         {user && comment.author?.id === user.id && (
                           <button
