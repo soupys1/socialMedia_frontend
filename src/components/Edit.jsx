@@ -16,7 +16,7 @@ export default function Edit() {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/content`, {
+        const response = await fetch(`${API_BASE_URL}/api/content/${id}`, {
           credentials: 'include',
         });
 
@@ -25,25 +25,24 @@ export default function Edit() {
             navigate('/login');
             return;
           }
-          throw new Error('Failed to fetch posts');
+          const errData = await response.json();
+          throw new Error(errData.error || 'Failed to fetch post');
         }
 
         const data = await response.json();
-        const targetPost = data.posts.find(p => p.id === parseInt(id));
-        
+        const targetPost = data.post;
+        const currentUser = data.user;
         if (!targetPost) {
           setError('Post not found');
           setLoading(false);
           return;
         }
-
         // Check if the current user owns this post
-        if (targetPost.author.id !== data.user.id) {
+        if (targetPost.author.id !== currentUser.id) {
           setError('You can only edit your own posts');
           setLoading(false);
           return;
         }
-
         setPost(targetPost);
         setTitle(targetPost.title);
         setContent(targetPost.content);
@@ -53,7 +52,6 @@ export default function Edit() {
         setLoading(false);
       }
     };
-
     fetchPost();
   }, [id, navigate]);
 
