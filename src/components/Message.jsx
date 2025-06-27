@@ -174,11 +174,24 @@ export default function Message() {
           </div>
           {/* Chat Area */}
           <div className="w-2/3 flex flex-col justify-between" aria-label="Chat area">
-            <div className="p-4 border-b flex items-center space-x-2">
+            <div className="p-4 border-b flex items-center space-x-3 bg-blue-50">
               {friendIdParam && friend && (
-                <h3 className="text-lg font-semibold">
-                  {friend.friend.first_name} {friend.friend.last_name} (@{friend.friend.username})
-                </h3>
+                <>
+                  {friend.friend.profile_picture && friend.friend.profile_picture.startsWith('http') ? (
+                    <img
+                      src={friend.friend.profile_picture}
+                      alt={friend.friend.username}
+                      className="w-12 h-12 rounded-full object-cover border border-blue-200 shadow-sm"
+                      style={{ minWidth: 48, minHeight: 48 }}
+                      onError={e => { e.target.onerror = null; e.target.src = ''; }}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-2xl font-bold text-blue-700 border border-blue-200 shadow-sm" style={{ minWidth: 48, minHeight: 48 }}>{friend.friend.username?.[0]?.toUpperCase() || 'U'}</div>
+                  )}
+                  <h3 className="text-lg font-semibold">
+                    {friend.friend.first_name} {friend.friend.last_name} (@{friend.friend.username})
+                  </h3>
+                </>
               )}
             </div>
             <div className="p-4 overflow-y-auto flex-grow space-y-4" aria-live="polite">

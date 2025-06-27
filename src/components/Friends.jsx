@@ -136,9 +136,9 @@ export default function Friends({ showMessagesList }) {
               <li key={f.id} className="flex items-center justify-between bg-white p-4 rounded shadow">
                 <div className="flex items-center space-x-3">
                   {f.friend?.profile_picture && f.friend.profile_picture.startsWith("http") ? (
-                    <img src={f.friend.profile_picture} alt={f.friend.username} className="w-10 h-10 rounded-full object-cover" />
+                    <img src={f.friend.profile_picture} alt={f.friend.username} className="w-10 h-10 rounded-full object-cover border border-blue-200 shadow-sm" />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg text-gray-600">
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg text-blue-700 font-bold border border-blue-200 shadow-sm">
                       {f.friend?.username?.[0]?.toUpperCase()}
                     </div>
                   )}
@@ -166,9 +166,9 @@ export default function Friends({ showMessagesList }) {
             <li key={f.id} className="flex items-center justify-between bg-white p-4 rounded shadow">
               <div className="flex items-center space-x-3">
                 {f.friend?.profile_picture && f.friend.profile_picture.startsWith("http") ? (
-                  <img src={f.friend.profile_picture} alt={f.friend.username} className="w-10 h-10 rounded-full object-cover" />
+                  <img src={f.friend.profile_picture} alt={f.friend.username} className="w-10 h-10 rounded-full object-cover border border-blue-200 shadow-sm" />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg text-gray-600">
+                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg text-blue-700 font-bold border border-blue-200 shadow-sm">
                     {f.friend?.username?.[0]?.toUpperCase()}
                   </div>
                 )}

@@ -201,9 +201,17 @@ export default function Content() {
           {posts.map((post) => (
             <div key={post.id} className="bg-white rounded-2xl shadow-lg p-8 border border-blue-100">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center mr-4 text-xl font-bold text-blue-600">
-                  {post.author?.username?.[0]?.toUpperCase() || "U"}
-                </div>
+                {post.author?.profile_picture && post.author.profile_picture.startsWith('http') ? (
+                  <img
+                    src={post.author.profile_picture}
+                    alt={post.author.username}
+                    className="w-12 h-12 rounded-full object-cover bg-gray-300 mr-4 border border-blue-200 shadow-sm"
+                    style={{ minWidth: 48, minHeight: 48 }}
+                    onError={e => { e.target.onerror = null; e.target.src = ''; }}
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center mr-4 text-xl font-bold text-blue-600 border border-blue-200 shadow-sm" style={{ minWidth: 48, minHeight: 48 }}>{post.author?.username?.[0]?.toUpperCase() || 'U'}</div>
+                )}
                 <div>
                   <h3 className="font-semibold text-lg text-blue-700">{post.author?.username || "Unknown"}</h3>
                   <p className="text-sm text-gray-500">
