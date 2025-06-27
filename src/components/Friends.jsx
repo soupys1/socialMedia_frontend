@@ -92,12 +92,8 @@ export default function Friends({ showMessagesList }) {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to accept friend request");
       }
-      // Remove the request from incomingRequests and add to friends
-      const acceptedRequest = incomingRequests.find(req => req.id === requestId);
-      if (acceptedRequest) {
-        setIncomingRequests(prev => prev.filter(req => req.id !== requestId));
-        setFriends(prev => [...prev, { id: Date.now(), friend: acceptedRequest.user }]);
-      }
+      // Refresh friends and requests from backend
+      await fetchFriends();
       setError(""); // Clear any previous errors
       setSuccess("Friend request accepted successfully!");
     } catch (err) {
