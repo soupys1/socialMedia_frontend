@@ -191,9 +191,9 @@ export default function Message() {
               )}
               {messages.map((msg) => {
                 const isSender = msg.sender_id === viewer?.id;
-                const avatarUrl = isSender ? (msg.senderProfilePic && msg.senderProfilePic.startsWith('http') ? msg.senderProfilePic : null) : (msg.receiverProfilePic && msg.receiverProfilePic.startsWith('http') ? msg.receiverProfilePic : null);
-                const avatarInitial = isSender ? (viewer?.username?.[0]?.toUpperCase() || 'U') : (friend?.friend?.username?.[0]?.toUpperCase() || 'U');
-                const senderName = isSender ? viewer?.username : friend?.friend?.username || "Unknown";
+                const avatarUrl = msg.senderProfilePic && msg.senderProfilePic.startsWith('http') ? msg.senderProfilePic : null;
+                const avatarInitial = msg.senderName ? msg.senderName[0].toUpperCase() : 'U';
+                const senderName = msg.senderName || 'Unknown';
                 const createdAt = new Date(msg.created_at);
                 const date = createdAt.toLocaleDateString();
                 const time = createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -203,7 +203,7 @@ export default function Message() {
                     key={msg.id}
                     className={`flex ${isSender ? "justify-end" : "justify-start"} items-end space-x-2 w-full mb-2`}
                   >
-                    {/* Receiver avatar (left) */}
+                    {/* Avatar (always sender) */}
                     {!isSender && (
                       avatarUrl ? (
                         <img
@@ -236,7 +236,6 @@ export default function Message() {
                         {senderName} • {date} • {time}
                       </div>
                     </div>
-                    {/* Sender avatar (right) */}
                     {isSender && (
                       avatarUrl ? (
                         <img
