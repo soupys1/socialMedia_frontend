@@ -191,7 +191,8 @@ export default function Message() {
               )}
               {messages.map((msg) => {
                 const isSender = msg.sender_id === viewer?.id;
-                const senderName = isSender ? viewer.username : friend?.friend.username || "Unknown";
+                const senderProfilePic = isSender ? viewer?.profile_picture : friend?.friend?.profile_picture;
+                const senderName = isSender ? viewer?.username : friend?.friend?.username || "Unknown";
                 const createdAt = new Date(msg.created_at);
                 const date = createdAt.toLocaleDateString();
                 const time = createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -199,8 +200,18 @@ export default function Message() {
                 return (
                   <div
                     key={msg.id}
-                    className={`flex ${isSender ? "justify-end" : "justify-start"} items-start space-x-2 w-full`}
+                    className={`flex ${isSender ? "justify-end" : "justify-start"} items-end space-x-2 w-full mb-2`}
                   >
+                    {/* Receiver avatar (left) */}
+                    {!isSender && (
+                      <img
+                        src={friend?.friend?.profile_picture && friend.friend.profile_picture.startsWith('http') ? friend.friend.profile_picture : undefined}
+                        alt={senderName}
+                        className="w-8 h-8 rounded-full object-cover bg-gray-300"
+                        style={{ minWidth: 32, minHeight: 32 }}
+                        onError={e => { e.target.onerror = null; e.target.src = ''; }}
+                      />
+                    )}
                     <div
                       className={`flex flex-col ${isSender ? "items-end" : "items-start"} max-w-[70%]`}
                     >
@@ -220,6 +231,16 @@ export default function Message() {
                         {senderName} • {date} • {time}
                       </div>
                     </div>
+                    {/* Sender avatar (right) */}
+                    {isSender && (
+                      <img
+                        src={viewer?.profile_picture && viewer.profile_picture.startsWith('http') ? viewer.profile_picture : undefined}
+                        alt={senderName}
+                        className="w-8 h-8 rounded-full object-cover bg-gray-300"
+                        style={{ minWidth: 32, minHeight: 32 }}
+                        onError={e => { e.target.onerror = null; e.target.src = ''; }}
+                      />
+                    )}
                   </div>
                 );
               })}
