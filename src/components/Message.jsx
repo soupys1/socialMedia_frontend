@@ -85,6 +85,7 @@ export default function Message() {
       }
       setMessageText("");
       fetchMessages(friendIdParam);
+      setError(""); // Clear any previous errors
     } catch (err) {
       setError(err.message || "Failed to send message");
     }

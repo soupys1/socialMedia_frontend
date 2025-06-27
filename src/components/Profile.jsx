@@ -80,9 +80,19 @@ export default function Profile() {
       }
       setProfilePicture(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      // Refetch profile
+      // Refetch profile data instead of full page reload
       setLoading(true);
-      setTimeout(() => window.location.reload(), 500); // Quick fix to refresh
+      const profileRes = await fetch(`${API_BASE_URL}/api/profile${id ? `?id=${id}` : ""}`, { 
+        credentials: "include" 
+      });
+      if (profileRes.ok) {
+        const data = await profileRes.json();
+        setViewer(data.viewer);
+        setUser(data.profileUser);
+        setPosts(data.posts || []);
+      }
+      setLoading(false);
+      setError(""); // Clear any previous errors
     } catch (err) {
       setError(err.message || "Failed to upload profile picture.");
     }
@@ -159,12 +169,20 @@ export default function Profile() {
               {viewer.id !== user.id && (
                 <button
                   onClick={async () => {
-                    await fetch(`${API_BASE_URL}/api/profile/${user.id}`, {
-                      method: "POST",
-                      credentials: "include",
-                    });
-                    alert("Friend request sent!");
-                    window.location.reload();
+                    try {
+                      const response = await fetch(`${API_BASE_URL}/api/profile/${user.id}`, {
+                        method: "POST",
+                        credentials: "include",
+                      });
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Failed to send friend request");
+                      }
+                      alert("Friend request sent!");
+                      setError(""); // Clear any previous errors
+                    } catch (err) {
+                      setError(err.message);
+                    }
                   }}
                   className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition mt-2"
                 >

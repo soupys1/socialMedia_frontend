@@ -9,6 +9,7 @@ export default function Content() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [newPost, setNewPost] = useState({ title: "", content: "" });
   const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
@@ -39,6 +40,20 @@ export default function Content() {
     fetchPosts();
   }, []);
 
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newPost.title || !newPost.content) return;
@@ -64,6 +79,7 @@ export default function Content() {
       setNewPost({ title: "", content: "" });
       setSelectedFile(null);
       fetchPosts();
+      setSuccess("Post created successfully!");
     } catch (err) {
       setError(err.message);
     }
@@ -99,6 +115,28 @@ export default function Content() {
     <div className="min-h-screen bg-gray-100">
       <Nav handleLogout={handleLogout} />
       <div className="max-w-4xl mx-auto py-6 px-4">
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+            {error}
+            <button 
+              onClick={() => setError(null)} 
+              className="float-right font-bold text-red-700 hover:text-red-900"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert">
+            {success}
+            <button 
+              onClick={() => setSuccess(null)} 
+              className="float-right font-bold text-green-700 hover:text-green-900"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-2xl font-bold mb-4">Create New Post</h2>
           <form onSubmit={handleSubmit}>
@@ -177,11 +215,19 @@ export default function Content() {
                 </Link>
                 <button
                   onClick={async () => {
-                    await fetch(`${API_BASE_URL}/api/content/${post.id}/like`, {
-                      method: "POST",
-                      credentials: "include",
-                    });
-                    fetchPosts();
+                    try {
+                      const response = await fetch(`${API_BASE_URL}/api/content/${post.id}/like`, {
+                        method: "POST",
+                        credentials: "include",
+                      });
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Failed to like post");
+                      }
+                      fetchPosts(); // Refresh posts to show updated like count
+                    } catch (err) {
+                      setError(err.message);
+                    }
                   }}
                   className="text-blue-500 hover:underline ml-4"
                 >
@@ -190,11 +236,21 @@ export default function Content() {
                 {user && post.author?.id === user.id && (
                   <button
                     onClick={async () => {
-                      await fetch(`${API_BASE_URL}/api/content/${post.id}`, {
-                        method: "DELETE",
-                        credentials: "include",
-                      });
-                      fetchPosts();
+                      if (window.confirm("Are you sure you want to delete this post?")) {
+                        try {
+                          const response = await fetch(`${API_BASE_URL}/api/content/${post.id}`, {
+                            method: "DELETE",
+                            credentials: "include",
+                          });
+                          if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || "Failed to delete post");
+                          }
+                          fetchPosts(); // Refresh posts to remove deleted post
+                        } catch (err) {
+                          setError(err.message);
+                        }
+                      }
                     }}
                     className="text-red-500 hover:underline ml-4"
                   >
@@ -215,11 +271,19 @@ export default function Content() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={async () => {
-                            await fetch(`${API_BASE_URL}/api/content/${post.id}/comment/${comment.id}/like`, {
-                              method: "POST",
-                              credentials: "include",
-                            });
-                            fetchPosts();
+                            try {
+                              const response = await fetch(`${API_BASE_URL}/api/content/${post.id}/comment/${comment.id}/like`, {
+                                method: "POST",
+                                credentials: "include",
+                              });
+                              if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || "Failed to like comment");
+                              }
+                              fetchPosts(); // Refresh posts to show updated like count
+                            } catch (err) {
+                              setError(err.message);
+                            }
                           }}
                           className="text-blue-400 hover:underline text-xs"
                         >
@@ -228,11 +292,21 @@ export default function Content() {
                         {user && comment.author?.id === user.id && (
                           <button
                             onClick={async () => {
-                              await fetch(`${API_BASE_URL}/api/content/${post.id}/comment/${comment.id}`, {
-                                method: "DELETE",
-                                credentials: "include",
-                              });
-                              fetchPosts();
+                              if (window.confirm("Are you sure you want to delete this comment?")) {
+                                try {
+                                  const response = await fetch(`${API_BASE_URL}/api/content/${post.id}/comment/${comment.id}`, {
+                                    method: "DELETE",
+                                    credentials: "include",
+                                  });
+                                  if (!response.ok) {
+                                    const errorData = await response.json();
+                                    throw new Error(errorData.error || "Failed to delete comment");
+                                  }
+                                  fetchPosts(); // Refresh posts to remove deleted comment
+                                } catch (err) {
+                                  setError(err.message);
+                                }
+                              }
                             }}
                             className="text-red-400 hover:underline text-xs"
                           >
@@ -248,20 +322,44 @@ export default function Content() {
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
-                    const comment = e.target.elements.comment.value;
-                    await fetch(`${API_BASE_URL}/api/content/${post.id}/comment`, {
-                      method: "POST",
-                      credentials: "include",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ content: comment }),
-                    });
-                    fetchPosts();
-                    e.target.reset();
+                    const formData = new FormData(e.target);
+                    const content = formData.get('comment');
+                    if (!content.trim()) return;
+
+                    try {
+                      const response = await fetch(`${API_BASE_URL}/api/content/${post.id}/comment`, {
+                        method: "POST",
+                        credentials: "include",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ content: content.trim() }),
+                      });
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Failed to add comment");
+                      }
+                      e.target.reset();
+                      fetchPosts(); // Refresh posts to show new comment
+                    } catch (err) {
+                      setError(err.message);
+                    }
                   }}
-                  className="flex gap-2 mt-2"
+                  className="mt-2"
                 >
-                  <input name="comment" placeholder="Add a comment..." required className="flex-1 border rounded px-2 py-1" />
-                  <button type="submit" className="bg-blue-500 text-white px-3 py-1 rounded">Comment</button>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      name="comment"
+                      placeholder="Add a comment..."
+                      className="flex-1 border rounded px-3 py-1 text-sm"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition"
+                    >
+                      Comment
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>

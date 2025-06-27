@@ -9,6 +9,7 @@ export default function Friends({ showMessagesList }) {
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
@@ -48,14 +49,34 @@ export default function Friends({ showMessagesList }) {
     }
   }, [showMessagesList]);
 
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const handleSendRequest = async (userId) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/profile/${userId}`, {
         method: "POST",
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to send friend request");
-      window.location.reload();
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to send friend request");
+      }
+      // Remove the user from allUsers to show request was sent
+      setAllUsers(prev => prev.filter(user => user.id !== userId));
+      setError(""); // Clear any previous errors
+      setSuccess("Friend request sent successfully!");
     } catch (err) {
       setError(err.message);
     }
@@ -67,8 +88,18 @@ export default function Friends({ showMessagesList }) {
         method: "POST",
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to accept friend request");
-      window.location.reload();
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to accept friend request");
+      }
+      // Remove the request from incomingRequests and add to friends
+      const acceptedRequest = incomingRequests.find(req => req.id === requestId);
+      if (acceptedRequest) {
+        setIncomingRequests(prev => prev.filter(req => req.id !== requestId));
+        setFriends(prev => [...prev, { id: Date.now(), friend: acceptedRequest.user }]);
+      }
+      setError(""); // Clear any previous errors
+      setSuccess("Friend request accepted successfully!");
     } catch (err) {
       setError(err.message);
     }
@@ -113,6 +144,7 @@ export default function Friends({ showMessagesList }) {
       <div className="max-w-2xl mx-auto py-8">
         <h2 className="text-2xl font-bold mb-4">Your Friends</h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
+        {success && <p className="text-green-500 mb-4">{success}</p>}
         {friends.length === 0 && <p className="text-gray-500">No friends yet.</p>}
         <ul className="space-y-4 mb-8">
           {friends.map((f) => (

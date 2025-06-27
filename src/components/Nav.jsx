@@ -13,17 +13,24 @@ export default function Nav({ handleLogout }) {
     async function fetchFriends() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/profile`, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch friends");
+        if (!res.ok) {
+          if (res.status === 401) {
+            navigate("/login");
+            return;
+          }
+          throw new Error("Failed to fetch friends");
+        }
         const data = await res.json();
         setFriends(data.friends || []);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching friends:", err);
+        // Don't set loading to false on error to allow retry
       } finally {
         setLoading(false);
       }
     }
     fetchFriends();
-  }, []);
+  }, [navigate]);
 
   const firstFriendId = friends.length > 0 ? friends[0].friend.id : null;
 
