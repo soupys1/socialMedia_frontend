@@ -105,6 +105,25 @@ export default function Friends({ showMessagesList }) {
     }
   };
 
+  const handleDenyRequest = async (requestId) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/profile/deny/${requestId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to deny friend request");
+      }
+      // Remove the request from incomingRequests
+      setIncomingRequests(prev => prev.filter(req => req.id !== requestId));
+      setError(""); // Clear any previous errors
+      setSuccess("Friend request denied successfully!");
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   if (loading) {
     return <div><Nav /><div className="text-center mt-10 text-gray-600">Loading friends...</div></div>;
   }
@@ -178,7 +197,10 @@ export default function Friends({ showMessagesList }) {
                 )}
                 <span className="font-semibold">{req.user?.username}</span>
               </div>
-              <button onClick={() => handleAcceptRequest(req.id)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">Accept</button>
+              <div className="flex gap-2">
+                <button onClick={() => handleAcceptRequest(req.id)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">Accept</button>
+                <button onClick={() => handleDenyRequest(req.id)} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Deny</button>
+              </div>
             </li>
           ))}
         </ul>

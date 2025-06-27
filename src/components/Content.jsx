@@ -234,16 +234,26 @@ export default function Content() {
                       });
                       if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(errorData.error || "Failed to like post");
+                        throw new Error(errorData.error || "Failed to toggle like");
                       }
-                      fetchPosts(); // Refresh posts to show updated like count
+                      // Optimistically update UI
+                      setPosts(prevPosts => prevPosts.map(p =>
+                        p.id === post.id
+                          ? {
+                              ...p,
+                              likedByUser: !p.likedByUser,
+                              likes: p.likedByUser ? (p.likes || 1) - 1 : (p.likes || 0) + 1
+                            }
+                          : p
+                      ));
+                      setError("");
                     } catch (err) {
                       setError(err.message);
                     }
                   }}
-                  className="text-blue-500 hover:underline ml-4"
+                  className={`ml-4 px-3 py-1 rounded text-sm font-semibold transition ${post.likedByUser ? "bg-blue-100 text-blue-600 border border-blue-400" : "text-blue-500 hover:bg-blue-100"}`}
                 >
-                  Like ({post.likes || 0})
+                  {post.likedByUser ? `Unlike (${post.likes || 0})` : `Like (${post.likes || 0})`}
                 </button>
                 {user && post.author?.id === user.id && (
                   <button
@@ -258,7 +268,7 @@ export default function Content() {
                             const errorData = await response.json();
                             throw new Error(errorData.error || "Failed to delete post");
                           }
-                          fetchPosts(); // Refresh posts to remove deleted post
+                          fetchPosts();
                         } catch (err) {
                           setError(err.message);
                         }
@@ -290,16 +300,33 @@ export default function Content() {
                               });
                               if (!response.ok) {
                                 const errorData = await response.json();
-                                throw new Error(errorData.error || "Failed to like comment");
+                                throw new Error(errorData.error || "Failed to toggle like");
                               }
-                              fetchPosts(); // Refresh posts to show updated like count
+                              // Optimistically update UI
+                              setPosts(prevPosts => prevPosts.map(p =>
+                                p.id === post.id
+                                  ? {
+                                      ...p,
+                                      comments: p.comments.map(c =>
+                                        c.id === comment.id
+                                          ? {
+                                              ...c,
+                                              likedByUser: !c.likedByUser,
+                                              likes: c.likedByUser ? (c.likes || 1) - 1 : (c.likes || 0) + 1
+                                            }
+                                          : c
+                                      )
+                                    }
+                                  : p
+                              ));
+                              setError("");
                             } catch (err) {
                               setError(err.message);
                             }
                           }}
-                          className="text-blue-400 hover:underline text-xs"
+                          className={`text-xs px-2 py-1 rounded font-semibold transition ${comment.likedByUser ? "bg-blue-100 text-blue-600 border border-blue-400" : "text-blue-400 hover:bg-blue-100"}`}
                         >
-                          Like ({comment.likes || 0})
+                          {comment.likedByUser ? `Unlike (${comment.likes || 0})` : `Like (${comment.likes || 0})`}
                         </button>
                         {user && comment.author?.id === user.id && (
                           <button
@@ -314,7 +341,7 @@ export default function Content() {
                                     const errorData = await response.json();
                                     throw new Error(errorData.error || "Failed to delete comment");
                                   }
-                                  fetchPosts(); // Refresh posts to remove deleted comment
+                                  fetchPosts();
                                 } catch (err) {
                                   setError(err.message);
                                 }
