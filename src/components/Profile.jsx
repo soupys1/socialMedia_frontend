@@ -2,241 +2,206 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Nav from "./Nav";
 
-// Use environment variable or fallback to Render backend
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://socialmedia-backend-k1nf.onrender.com";
-console.log("API_BASE_URL:", API_BASE_URL);
+
+const isValidPic = (p) => typeof p === "string" && p.startsWith("http");
 
 export default function Profile() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
   const [user, setUser] = useState(null);
   const [viewer, setViewer] = useState(null);
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profilePicture, setProfilePicture] = useState(null);
-  const fileInputRef = useRef(null);
-  const navigate = useNavigate();
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [addFriendLoading, setAddFriendLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
-  // Helper to check for valid profile picture URL
-  const isValidProfilePic = (pic) => typeof pic === 'string' && pic.startsWith("http");
+  const fetchProfile = async () => {
+    setLoading(true);
+    setError(null);
+    const query = id ? `?id=${id}` : "";
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/profile${query}`, { credentials: "include" });
+      if (res.status === 401) { navigate("/login"); return; }
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed to load profile"); }
+      const data = await res.json();
+      setViewer(data.viewer);
+      setUser(data.profileUser);
+      setPosts(data.posts || []);
+    } catch (err) {
+      setError(err.message || "Could not load profile.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Fetch profile data
   useEffect(() => {
-    let isMounted = true;
-    const fetchProfile = async () => {
-      setLoading(true);
-      setError(null);
-      const query = id ? `?id=${id}` : "";
-      const fetchUrl = `${API_BASE_URL}/api/profile${query}`;
-      console.log("Profile fetch URL:", fetchUrl);
-      try {
-        const res = await fetch(fetchUrl, { credentials: "include" });
-        console.log("Profile response status:", res.status);
-        if (res.status === 401) {
-          setError("You are not authorized. Please log in again.");
-          navigate("/login");
-          return;
-        }
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || "Failed to load profile");
-        }
-        const data = await res.json();
-        if (isMounted) {
-          setViewer(data.viewer);
-          setUser(data.profileUser);
-          setPosts(data.posts || []);
-        }
-      } catch (err) {
-        if (isMounted) setError(err.message || "Could not load profile.");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    fetchProfile();
-    return () => { isMounted = false; };
-    // eslint-disable-next-line
+    let mounted = true;
+    fetchProfile().then(() => { if (!mounted) return; });
+    return () => { mounted = false; };
   }, [id, location.pathname]);
 
-  // Upload profile picture
+  useEffect(() => {
+    if (successMsg) { const t = setTimeout(() => setSuccessMsg(""), 3000); return () => clearTimeout(t); }
+  }, [successMsg]);
+
   const handleUploadProfilePicture = async (e) => {
     e.preventDefault();
-    if (!profilePicture) {
-      setError("Please select a file to upload.");
-      return;
-    }
+    if (!profilePicture) return;
+    setUploadLoading(true);
     const formData = new FormData();
     formData.append("profilePicture", profilePicture);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/profile/picture`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to upload profile picture");
-      }
+      const res = await fetch(`${API_BASE_URL}/api/profile/picture`, { method: "POST", credentials: "include", body: formData });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Upload failed"); }
       setProfilePicture(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      // Refetch profile data instead of full page reload
-      setLoading(true);
-      const profileRes = await fetch(`${API_BASE_URL}/api/profile${id ? `?id=${id}` : ""}`, { 
-        credentials: "include" 
-      });
-      if (profileRes.ok) {
-        const data = await profileRes.json();
-        setViewer(data.viewer);
-        setUser(data.profileUser);
-        setPosts(data.posts || []);
-      }
-      setLoading(false);
-      setError(""); // Clear any previous errors
+      setSuccessMsg("Profile picture updated.");
+      fetchProfile();
     } catch (err) {
-      setError(err.message || "Failed to upload profile picture.");
+      setError(err.message);
+    } finally {
+      setUploadLoading(false);
     }
   };
 
-  // Logout
-  const handleLogout = async () => {
+  const handleAddFriend = async () => {
+    setAddFriendLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        console.error('Logout failed:', response.status);
-      }
-      
-      // Always navigate to login, even if logout request fails
-      navigate("/login");
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Still navigate to login even if there's an error
-      navigate("/login");
+      const res = await fetch(`${API_BASE_URL}/api/profile/${user.id}`, { method: "POST", credentials: "include" });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed to send friend request"); }
+      setSuccessMsg("Friend request sent!");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAddFriendLoading(false);
     }
   };
 
-  // Debug log for profile picture
-  const profilePic = user && user.profile_picture;
-  const validPic = isValidProfilePic(profilePic);
-  console.log("user.profile_picture:", profilePic, "isValid:", validPic);
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <Nav handleLogout={handleLogout} />
-        <div className="text-center mt-10 text-red-500" role="alert">{error}</div>
-        <div className="text-center mt-2 text-gray-500">URL: {location.pathname}</div>
-      </div>
-    );
-  }
+  const handleLogout = async () => {
+    try { await fetch(`${API_BASE_URL}/api/logout`, { method: "POST", credentials: "include" }); } catch {}
+    navigate("/login");
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="page">
         <Nav handleLogout={handleLogout} />
-        <div className="text-center mt-10 text-gray-600 animate-pulse" role="status">
-          Loading profile...
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200 }}>
+          <div className="spinner" />
         </div>
       </div>
     );
   }
 
-  if (!user || !viewer) {
+  if (error && !user) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="page">
         <Nav handleLogout={handleLogout} />
-        <div className="text-center mt-10 text-red-500" role="alert">
-          Could not load user data. Please try again later.
+        <div className="container">
+          <div className="alert alert-error">{error}</div>
         </div>
       </div>
     );
   }
+
+  const isOwn = viewer?.id === user?.id;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="page">
       <Nav handleLogout={handleLogout} />
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow-lg p-6 rounded-lg max-w-3xl mx-auto">
-          <div className="flex items-center space-x-4 mb-6">
-            {validPic ? (
-              <img
-                src={profilePic}
-                alt={`${user.username}'s profile picture`}
-                className="w-20 h-20 rounded-full object-cover"
-              />
+      <div className="container">
+        {error     && <div className="alert alert-error">{error}</div>}
+        {successMsg && <div className="alert alert-success">{successMsg}</div>}
+
+        {/* Profile card */}
+        <div className="card" style={{ marginBottom: 24 }}>
+          {/* Avatar + info */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
+            {isValidPic(user?.profile_picture) ? (
+              <img src={user.profile_picture} alt={user.username} className="avatar avatar-xl" />
             ) : (
-              <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center text-2xl text-gray-600">
-                {user.username[0].toUpperCase()}
+              <div className="avatar avatar-xl" style={{ fontSize: 26 }}>
+                {user?.username?.[0]?.toUpperCase() || "U"}
               </div>
             )}
-            <div>
-              <h1 className="text-2xl font-bold text-blue-600">
-                {user.first_name} {user.last_name} (@{user.username})
+            <div style={{ flex: 1 }}>
+              <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.4px", margin: "0 0 2px" }}>
+                {user?.first_name} {user?.last_name}
               </h1>
-              <p className="text-gray-600">{user.email}</p>
-              {viewer.id !== user.id && (
+              <div style={{ fontSize: 13, color: "var(--ink-subtle)", marginBottom: 8 }}>@{user?.username}</div>
+              <div style={{ fontSize: 13, color: "var(--ink-muted)" }}>{user?.email}</div>
+
+              {!isOwn && (
                 <button
-                  onClick={async () => {
-                    try {
-                      const response = await fetch(`${API_BASE_URL}/api/profile/${user.id}`, {
-                        method: "POST",
-                        credentials: "include",
-                      });
-                      if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || "Failed to send friend request");
-                      }
-                      alert("Friend request sent!");
-                      setError(""); // Clear any previous errors
-                    } catch (err) {
-                      setError(err.message);
-                    }
-                  }}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition mt-2"
+                  className="btn btn-primary btn-sm"
+                  style={{ marginTop: 12 }}
+                  onClick={handleAddFriend}
+                  disabled={addFriendLoading}
                 >
-                  Add Friend
+                  {addFriendLoading ? "Sending…" : "Add friend"}
                 </button>
               )}
             </div>
           </div>
-          <form onSubmit={handleUploadProfilePicture} className="mb-6">
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              onChange={e => setProfilePicture(e.target.files[0])}
-              className="mb-2"
-            />
-            <button
-              type="submit"
-              className="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition"
-            >
-              Upload Profile Picture
-            </button>
-          </form>
-          <h2 className="text-xl font-semibold mb-4">Posts</h2>
-          {posts.length > 0 ? (
-            posts.map((post) => (
-              <div key={post.id} className="bg-gray-50 rounded-lg p-4 mb-4 shadow-sm border">
-                <h3 className="text-lg font-bold text-blue-600 mb-2">{post.title}</h3>
-                <p className="text-gray-600 mb-2">{post.content}</p>
-                {post.images?.length > 0 && post.images[0].url && (
-                  <img
-                    src={post.images[0].url}
-                    alt="Post"
-                    className="w-full h-auto rounded-md"
-                  />
-                )}
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500 text-center">No posts yet.</p>
+
+          {/* Upload picture (own profile only) */}
+          {isOwn && (
+            <>
+              <hr className="divider" />
+              <form onSubmit={handleUploadProfilePicture} style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={e => setProfilePicture(e.target.files[0])}
+                  style={{ fontSize: 13, color: "var(--ink-muted)", flex: 1, minWidth: 0 }}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-secondary btn-sm"
+                  disabled={!profilePicture || uploadLoading}
+                >
+                  {uploadLoading ? "Uploading…" : "Update photo"}
+                </button>
+              </form>
+            </>
           )}
         </div>
+
+        {/* Posts */}
+        <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span className="eyebrow">Posts · {posts.length}</span>
+        </div>
+
+        {posts.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 0", color: "var(--ink-subtle)", fontSize: 14 }}>
+            No posts yet.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {posts.map(post => (
+              <div key={post.id} className="card" style={{ padding: 18 }}>
+                <h3 style={{ fontWeight: 600, fontSize: 15, letterSpacing: "-0.2px", margin: "0 0 6px" }}>{post.title}</h3>
+                <p style={{ fontSize: 14, color: "var(--ink-muted)", lineHeight: 1.6, margin: "0 0 10px" }}>{post.content}</p>
+                {post.images?.[0]?.url && (
+                  <img src={post.images[0].url} alt="Post" style={{ width: "100%", borderRadius: 8, border: "1px solid var(--hairline)" }} />
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, fontSize: 12, color: "var(--ink-subtle)" }}>
+                  <span>{post.likes || 0} likes</span>
+                  <span>{post.comments?.length || 0} comments</span>
+                  <span style={{ marginLeft: "auto" }}>{new Date(post.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

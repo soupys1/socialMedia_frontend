@@ -1,103 +1,113 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://socialmedia-backend-k1nf.onrender.com";
 
+function SunIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/>
+      <line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/>
+      <line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  );
+}
+
 export default function Nav({ handleLogout }) {
   const navigate = useNavigate();
-  const [friends, setFriends] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
   const [viewer, setViewer] = useState(null);
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("theme") || "light"; } catch { return "light"; }
+  });
+
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("theme", theme); } catch {}
+  }, [theme]);
 
   useEffect(() => {
-    async function fetchFriendsAndViewer() {
+    async function fetchViewer() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/profile`, { credentials: "include" });
         if (!res.ok) {
-          if (res.status === 401) {
-            navigate("/login");
-            return;
-          }
-          throw new Error("Failed to fetch friends");
+          if (res.status === 401) navigate("/login");
+          return;
         }
         const data = await res.json();
-        setFriends(data.friends || []);
-        setViewer(data.viewer || null);
-      } catch (err) {
-        console.error("Error fetching friends:", err);
-        // Don't set loading to false on error to allow retry
-      } finally {
-        setLoading(false);
-      }
+        setViewer(data.profileUser || null);
+      } catch {}
     }
-    fetchFriendsAndViewer();
+    fetchViewer();
   }, [navigate]);
 
-  const firstFriendId = friends.length > 0 ? friends[0].friend.id : null;
+  const isActive = (path) => location.pathname === path;
 
-  const handleMessageClick = () => {
-    if (firstFriendId) {
-      navigate(`/message/${firstFriendId}`);
-    } else {
-      alert("No friends found to message.");
-    }
-  };
+  const navLinkClass = (path) =>
+    `nav-link${isActive(path) ? " text-[var(--ink)] bg-[var(--surface-1)]" : ""}`;
 
   return (
-    <nav className="bg-white shadow-lg">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center space-x-8">
-            <Link to="/content" className="text-xl font-bold text-blue-600">
-              JoinAHack
-            </Link>
-            <div className="flex space-x-4">
-              <Link
-                to="/content"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Home
-              </Link>
-              <Link
-                to="/profile"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Profile
-              </Link>
-              <Link
-                to="/friends"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Friends
-              </Link>
-              <Link
-                to="/messages"
-                className="text-gray-700 hover:text-blue-600 transition"
-              >
-                Messages
-              </Link>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            {viewer && viewer.profile_picture && viewer.profile_picture.startsWith('http') ? (
+    <nav className="nav">
+      <div className="nav-inner">
+        {/* Logo */}
+        <Link to="/content" className="nav-logo">JoinAHack</Link>
+
+        {/* Links */}
+        <div className="nav-links">
+          <Link to="/content"  className={navLinkClass("/content")}>Feed</Link>
+          <Link to="/profile"  className={navLinkClass("/profile")}>Profile</Link>
+          <Link to="/friends"  className={navLinkClass("/friends")}>Friends</Link>
+          <Link to="/messages" className={navLinkClass("/messages")}>Messages</Link>
+        </div>
+
+        {/* Actions */}
+        <div className="nav-actions">
+          {/* Theme toggle */}
+          <button
+            className="theme-btn"
+            onClick={() => setTheme(t => t === "light" ? "dark" : "light")}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+          </button>
+
+          {/* Avatar */}
+          {viewer && (
+            viewer.profile_picture?.startsWith("http") ? (
               <img
                 src={viewer.profile_picture}
                 alt={viewer.username}
-                className="w-9 h-9 rounded-full object-cover border border-blue-200 shadow-sm"
-                style={{ minWidth: 36, minHeight: 36 }}
-                onError={e => { e.target.onerror = null; e.target.src = ''; }}
+                className="avatar avatar-md"
+                onError={e => { e.target.style.display = "none"; }}
               />
-            ) : viewer ? (
-              <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center text-lg font-bold text-blue-700 border border-blue-200 shadow-sm" style={{ minWidth: 36, minHeight: 36 }}>{viewer.username?.[0]?.toUpperCase() || 'U'}</div>
-            ) : null}
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
-            >
-              Logout
+            ) : (
+              <div className="avatar avatar-md" style={{ fontSize: 13 }}>
+                {viewer.username?.[0]?.toUpperCase() || "U"}
+              </div>
+            )
+          )}
+
+          {/* Logout */}
+          {handleLogout && (
+            <button className="btn btn-secondary btn-sm" onClick={handleLogout}>
+              Sign out
             </button>
-          </div>
+          )}
         </div>
       </div>
     </nav>
