@@ -122,7 +122,7 @@ export default function Message() {
             backgroundColor: "var(--canvas)",
           }}>
             <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--hairline)" }}>
-              <span className="eyebrow">Threads</span>
+              <span className="eyebrow">Messages</span>
             </div>
             <div style={{ overflowY: "auto", flex: 1 }}>
               {friends.length === 0 ? (

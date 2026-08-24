@@ -131,7 +131,7 @@ export default function Friends({ showMessagesList }) {
       <div className="page">
         <Nav handleLogout={handleLogout} />
         <div className="container">
-          <div className="eyebrow" style={{ marginBottom: 20 }}>Threads</div>
+          <div className="eyebrow" style={{ marginBottom: 20 }}>Messages</div>
           {friends.length === 0 ? (
             <div style={{ textAlign: "center", padding: "48px 0", color: "var(--ink-subtle)", fontSize: 14 }}>
               Add friends to start messaging.

@@ -38,10 +38,10 @@ function IconYou() {
 }
 
 const NAV_LINKS = [
-  { to: "/content",  label: "Feed",    Icon: IconFeed },
-  { to: "/friends",  label: "Circle",  Icon: IconCircle },
-  { to: "/messages", label: "Threads", Icon: IconThreads },
-  { to: "/profile",  label: "You",     Icon: IconYou },
+  { to: "/content",  label: "Feed",     Icon: IconFeed },
+  { to: "/friends",  label: "Friends",  Icon: IconCircle },
+  { to: "/messages", label: "Messages", Icon: IconThreads },
+  { to: "/profile",  label: "You",      Icon: IconYou },
 ];
 
 export default function Nav({ handleLogout }) {

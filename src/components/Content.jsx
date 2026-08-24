@@ -182,6 +182,7 @@ export default function Content() {
                 onCommentLike={handleCommentLike}
                 onDelete={handleDeletePost}
                 onDeleteComment={handleDeleteComment}
+                onRefresh={fetchPosts}
                 featured
               />
             </GlowBorderCard>
@@ -245,6 +246,7 @@ export default function Content() {
                 onCommentLike={handleCommentLike}
                 onDelete={handleDeletePost}
                 onDeleteComment={handleDeleteComment}
+                onRefresh={fetchPosts}
               />
             ))}
           </div>
@@ -254,7 +256,7 @@ export default function Content() {
   );
 }
 
-function PostCard({ post, user, likeLoading, commentLikeLoading, onLike, onCommentLike, onDelete, onDeleteComment, featured }) {
+function PostCard({ post, user, likeLoading, commentLikeLoading, onLike, onCommentLike, onDelete, onDeleteComment, onRefresh, featured }) {
   const [showComments, setShowComments] = useState(false);
   const [error, setError] = useState(null);
   const isOwn = user && post.author?.id === user.id;
@@ -378,9 +380,7 @@ function PostCard({ post, user, likeLoading, commentLikeLoading, onLike, onComme
                     });
                     if (!r.ok) throw new Error("Failed");
                     e.target.reset();
-                    // refresh inline
-                    const res = await fetch(`${API_BASE_URL}/api/content`, { credentials: "include" });
-                    if (res.ok) { const d = await res.json(); /* will be picked up by parent on next fetch */ }
+                    if (onRefresh) onRefresh();
                   } catch (err) { setError(err.message); }
                 }}
                 style={{ display: "flex", gap: 6 }}

@@ -137,10 +137,6 @@ export default function Login() {
       {/* ── Hero with AnimatedRays background ── */}
       <AnimatedRays style={{ padding: "80px 24px 72px" }}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <div style={{ marginBottom: 14 }}>
-            <span className="badge">Hackathon platform for students</span>
-          </div>
-
           <h1 style={{
             fontSize: "clamp(34px, 6.5vw, 58px)",
             fontWeight: 700,
